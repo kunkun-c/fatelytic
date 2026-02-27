@@ -426,6 +426,10 @@ export const translations = {
   "eastern.upload.formats": { vi: "Hỗ trợ PNG, JPEG", en: "Supports PNG, JPEG" },
   "eastern.upload.start": { vi: "Bắt đầu luận giải", en: "Start analysis" },
   "eastern.upload.note": { vi: "Ảnh sẽ được phân tích và luận giải chi tiết.", en: "The image will be analyzed and explained in detail." },
+  "eastern.upload.slowNote": {
+    vi: "Phân tích ảnh có thể mất 1-3 phút tuỳ chất lượng ảnh và tải hệ thống. Vui lòng đợi.",
+    en: "Image analysis may take 1-3 minutes depending on image quality and system load. Please wait.",
+  },
 
   "eastern.option.upload.label": { vi: "Tải lá số", en: "Upload chart" },
   "eastern.option.upload.desc": { vi: "Upload ảnh lá số tử vi để luận giải chi tiết", en: "Upload a chart image for detailed analysis" },
@@ -460,6 +464,11 @@ export const translations = {
   "eastern.image.generate": { vi: "Tạo ảnh", en: "Generate image" },
   "eastern.image.generating": { vi: "Đang tạo...", en: "Generating..." },
   "eastern.image.clearInputs": { vi: "Xoá đầu vào", en: "Clear inputs" },
+  "eastern.image.slowTitle": { vi: "Tạo ảnh có thể mất vài phút", en: "Image generation may take a few minutes" },
+  "eastern.image.slowDesc": {
+    vi: "Nếu bạn tải ảnh lên (chân dung/lá số), thời gian xử lý có thể lâu hơn. Hãy giữ tab mở trong lúc hệ thống xử lý.",
+    en: "If you upload images (portrait/chart), processing can take longer. Please keep this tab open while we work.",
+  },
 
   "eastern.profileReading.title": { vi: "Luận giải theo hồ sơ", en: "Profile-based reading" },
   "eastern.profileReading.desc": { vi: "Hệ thống sẽ phân tích và trình bày theo từng mục để bạn xem nhanh.", en: "We'll analyze and present the results in sections for quick reading." },

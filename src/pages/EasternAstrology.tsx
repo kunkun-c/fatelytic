@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, Calendar, ImagePlus, FileImage, X, ChevronDown, MessageCircle } from "@/components/ui/icons";
+import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, ImagePlus, FileImage, X, ChevronDown, MessageCircle, ArrowLeft, Clock } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
@@ -269,7 +269,7 @@ const EasternAstrology = () => {
       labelKey: "eastern.option.fortune.label",
       descKey: "eastern.option.fortune.desc",
       promptKey: "eastern.option.fortune.prompt",
-      icon: Calendar,
+      icon: Clock,
     },
     {
       id: "image",
@@ -694,7 +694,7 @@ const EasternAstrology = () => {
 
   return (
     <>
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="max-w-3xl space-y-6">
         {/* <UserContextBanner /> */}
 
         <Reveal className="text-center" from="up" offset={18}>
@@ -732,12 +732,12 @@ const EasternAstrology = () => {
             <Reveal from="up" offset={18}>
               <div className="flex items-center justify-between">
                 <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); }}>
-                  {t("eastern.back")}
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div className="flex items-center gap-2">
                   <Link to="/history">
                     <Button variant="outline" size="sm" className="gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary">⏱</span>
+                      <Clock className="h-4 w-4" animate={true} />
                       <span className="hidden sm:inline">{t("eastern.history")}</span>
                     </Button>
                   </Link>
@@ -762,57 +762,111 @@ const EasternAstrology = () => {
               </div>
             </Reveal>
 
-            {selectedOption === "upload" ? (
-              <Reveal from="up" offset={18} delay={0.05}>
-                <Card className="p-5 shadow-sm">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                />
-                <div
-                  className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {uploadPreview ? (
-                    <div className="relative">
-                      <img src={uploadPreview} alt="Chart preview" className="max-h-64 rounded-lg" />
-                      <button onClick={(e) => { e.stopPropagation(); clearUpload(); }} className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20">
-                        <X className="h-4 w-4" />
-                      </button>
+            {selectedOption === "upload" && (
+              <>
+                <Reveal from="up" offset={18} delay={0.05}>
+                  <Card className="p-5 shadow-sm">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                    />
+                    <div
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploadPreview ? (
+                        <div className="relative">
+                          <img src={uploadPreview} alt="Chart preview" className="max-h-64 rounded-lg" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearUpload();
+                            }}
+                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : uploadFileName ? (
+                        <div className="flex items-center gap-2">
+                          <FileImage className="h-8 w-8 text-primary" />
+                          <span className="text-sm font-medium text-foreground">{uploadFileName}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearUpload();
+                            }}
+                          >
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
+                          <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
+                        </>
+                      )}
                     </div>
-                  ) : uploadFileName ? (
-                    <div className="flex items-center gap-2">
-                      <FileImage className="h-8 w-8 text-primary" />
-                      <span className="text-sm font-medium text-foreground">{uploadFileName}</span>
-                      <button onClick={(e) => { e.stopPropagation(); clearUpload(); }}>
-                        <X className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-                      <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
-                    </>
-                  )}
-                </div>
 
-                <Button
-                  size="lg"
-                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
-                  onClick={() => runAnalyze()}
-                  disabled={loading || !uploadFile}
-                >
-                  {t("eastern.upload.start")}
-                </Button>
+                    <Button
+                      size="lg"
+                      className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
+                      onClick={() => runAnalyze()}
+                      disabled={loading || !uploadFile}
+                    >
+                      {t("eastern.upload.start")}
+                    </Button>
 
-                <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
-                </Card>
-              </Reveal>
-            ) : selectedOption === "image" ? (
+                    {loading && (
+                      <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                        <div className="flex items-center gap-2">
+                          <Activity
+                            className="h-4 w-4 text-primary"
+                            animate
+                            animateOnHover={false}
+                            animation="default-loop"
+                            loop
+                          />
+                          <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.slowNote")}</p>
+                      </div>
+                    )}
+
+                    <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
+                  </Card>
+                </Reveal>
+
+                {result && (
+                  <Reveal className="mt-6" from="up" offset={18} delay={0.08}>
+                    <EasternUploadResult
+                      t={t}
+                      result={result}
+                      highlightId={highlightId}
+                      setOpenPalaceId={setOpenPalaceId}
+                      focusSection={focusSection}
+                      scrollToId={scrollToId}
+                      renderMarkdown={renderMarkdown}
+                      splitParagraphs={splitParagraphs}
+                      slugify={slugify}
+                      isPalaceSectionTitle={isPalaceSectionTitle}
+                      qaOpen={qaOpen}
+                      setQaOpen={setQaOpen}
+                      qaSessionKey={qaSessionKey}
+                      lastReadingId={lastReadingId}
+                      profile={profile}
+                      selectedOption={selectedOption}
+                    />
+                  </Reveal>
+                )}
+              </>
+            )}
+
+            {selectedOption === "image" && (
               <Reveal from="up" offset={18} delay={0.05}>
                 <Card className="p-5 shadow-sm space-y-4">
                 <div>
@@ -917,9 +971,21 @@ const EasternAstrology = () => {
                     {t("eastern.image.clearInputs")}
                   </Button>
                 </div>
+
+                {(loading || (partnerPortraitPreview || partnerChartPreview)) && (
+                  <div className="rounded-xl border border-border bg-background p-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default-loop" loop />
+                      <p className="text-sm font-medium text-foreground">{t("eastern.image.slowTitle")}</p>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.slowDesc")}</p>
+                  </div>
+                )}
                 </Card>
               </Reveal>
-            ) : (
+            )}
+
+            {selectedOption !== "upload" && selectedOption !== "image" && (
               <Reveal from="up" offset={18} delay={0.05}>
                 <Card className="p-5 shadow-sm">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
