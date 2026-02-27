@@ -68,6 +68,466 @@ interface OptionItem {
   promptKey?: string;
 }
 
+type EasternTopBarProps = {
+  t: (key: string) => string;
+  selectedOption: string | null;
+  options: OptionItem[];
+  setSelectedOption: (value: string | null) => void;
+  setResult: (value: EasternResult | null) => void;
+};
+
+const EasternTopBar = ({ t, selectedOption, options, setSelectedOption, setResult }: EasternTopBarProps) => {
+  return (
+    <Reveal from="up" offset={18}>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); }}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/history">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Clock className="h-4 w-4" animate={true} />
+              <span className="hidden sm:inline">{t("eastern.history")}</span>
+            </Button>
+          </Link>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+            {(() => {
+              const selectedOptionData = options.find((o) => o.id === selectedOption);
+              const SelectedIcon = selectedOptionData?.icon;
+              return (
+                <>
+                  <div
+                    className={`h-4 w-4 shrink-0 items-center justify-center rounded-lg ${
+                      selectedOptionData?.id === "image" ? "bg-gold/15" : "bg-primary/10"
+                    } flex`}
+                  >
+                    {SelectedIcon && (
+                      <SelectedIcon
+                        className={`h-3 w-3 ${selectedOptionData?.id === "image" ? "text-gold" : "text-primary"}`}
+                      />
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{selectedOptionData ? t(selectedOptionData.labelKey) : ""}</p>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+};
+
+type EasternUploadBlockProps = {
+  t: (key: string) => string;
+  loading: boolean;
+  result: EasternResult | null;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  uploadPreview: string | null;
+  uploadFileName: string;
+  uploadFile: File | null;
+  handleFile: (selected: File) => void;
+  clearUpload: () => void;
+  runAnalyze: () => void;
+  highlightId: string | null;
+  setOpenPalaceId: (id: string | null) => void;
+  focusSection: (id: string) => void;
+  scrollToId: (id: string) => void;
+  renderMarkdown: (text: string) => React.ReactNode;
+  splitParagraphs: (text: string) => string[];
+  slugify: (value: string) => string;
+  isPalaceSectionTitle: (title: string) => boolean;
+  qaOpen: boolean;
+  setQaOpen: (open: boolean) => void;
+  qaSessionKey: string | null;
+  lastReadingId: string | null;
+  profile: unknown;
+  selectedOption: string | null;
+};
+
+const EasternUploadBlock = ({
+  t,
+  loading,
+  result,
+  fileInputRef,
+  uploadPreview,
+  uploadFileName,
+  uploadFile,
+  handleFile,
+  clearUpload,
+  runAnalyze,
+  highlightId,
+  setOpenPalaceId,
+  focusSection,
+  scrollToId,
+  renderMarkdown,
+  splitParagraphs,
+  slugify,
+  isPalaceSectionTitle,
+  qaOpen,
+  setQaOpen,
+  qaSessionKey,
+  lastReadingId,
+  profile,
+  selectedOption,
+}: EasternUploadBlockProps) => {
+  return (
+    <>
+      <Reveal from="up" offset={18} delay={0.05}>
+        <Card className="p-5 shadow-sm">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg"
+            className="hidden"
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+          />
+          <div
+            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploadPreview ? (
+              <div className="relative">
+                <img src={uploadPreview} alt="Chart preview" className="max-h-64 rounded-lg" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearUpload();
+                  }}
+                  className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : uploadFileName ? (
+              <div className="flex items-center gap-2">
+                <FileImage className="h-8 w-8 text-primary" />
+                <span className="text-sm font-medium text-foreground">{uploadFileName}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearUpload();
+                  }}
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
+                <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
+              </>
+            )}
+          </div>
+
+          <Button
+            size="lg"
+            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
+            onClick={runAnalyze}
+            disabled={loading || !uploadFile}
+          >
+            {t("eastern.upload.start")}
+          </Button>
+
+          {loading && (
+            <div className="mt-4 rounded-xl border border-border bg-background p-4">
+              <div className="flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
+                <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.slowNote")}</p>
+            </div>
+          )}
+
+          <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
+        </Card>
+      </Reveal>
+
+      {result && (
+        <Reveal className="mt-6" from="up" offset={18} delay={0.08}>
+          <EasternUploadResult
+            t={t}
+            result={result}
+            highlightId={highlightId}
+            setOpenPalaceId={setOpenPalaceId}
+            focusSection={focusSection}
+            scrollToId={scrollToId}
+            renderMarkdown={renderMarkdown}
+            splitParagraphs={splitParagraphs}
+            slugify={slugify}
+            isPalaceSectionTitle={isPalaceSectionTitle}
+            qaOpen={qaOpen}
+            setQaOpen={setQaOpen}
+            qaSessionKey={qaSessionKey}
+            lastReadingId={lastReadingId}
+            profile={profile}
+            selectedOption={selectedOption}
+          />
+        </Reveal>
+      )}
+    </>
+  );
+};
+
+type EasternImageBlockProps = {
+  t: (key: string) => string;
+  loading: boolean;
+  partnerPortraitPreview: string | null;
+  partnerPortraitFileName: string;
+  partnerPortraitInputRef: React.RefObject<HTMLInputElement>;
+  handlePartnerPortraitFile: (selected: File) => void;
+  partnerChartPreview: string | null;
+  partnerChartFileName: string;
+  partnerChartInputRef: React.RefObject<HTMLInputElement>;
+  handlePartnerChartFile: (selected: File) => void;
+  clearPartnerInputs: () => void;
+  runGeneratePartnerImage: () => Promise<void>;
+  setPartnerPortraitPreview: (value: string | null) => void;
+  setPartnerPortraitFileName: (value: string) => void;
+  setPartnerPortraitFile: (value: File | null) => void;
+  setPartnerChartPreview: (value: string | null) => void;
+  setPartnerChartFileName: (value: string) => void;
+  setPartnerChartFile: (value: File | null) => void;
+};
+
+const EasternImageBlock = ({
+  t,
+  loading,
+  partnerPortraitPreview,
+  partnerPortraitFileName,
+  partnerPortraitInputRef,
+  handlePartnerPortraitFile,
+  partnerChartPreview,
+  partnerChartFileName,
+  partnerChartInputRef,
+  handlePartnerChartFile,
+  clearPartnerInputs,
+  runGeneratePartnerImage,
+  setPartnerPortraitPreview,
+  setPartnerPortraitFileName,
+  setPartnerPortraitFile,
+  setPartnerChartPreview,
+  setPartnerChartFileName,
+  setPartnerChartFile,
+}: EasternImageBlockProps) => {
+  return (
+    <Reveal from="up" offset={18} delay={0.05}>
+      <Card className="p-5 shadow-sm space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t("eastern.image.inputOptions.title")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.inputOptions.desc")}</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.portraitOptional")}</p>
+            <input
+              ref={partnerPortraitInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handlePartnerPortraitFile(e.target.files[0])}
+            />
+            <div
+              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
+              onClick={() => partnerPortraitInputRef.current?.click()}
+            >
+              {partnerPortraitPreview ? (
+                <div className="relative">
+                  <img src={partnerPortraitPreview} alt="Portrait preview" className="max-h-48 rounded-lg" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPartnerPortraitPreview(null);
+                      setPartnerPortraitFileName("");
+                      setPartnerPortraitFile(null);
+                      if (partnerPortraitInputRef.current) partnerPortraitInputRef.current.value = "";
+                    }}
+                    className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : partnerPortraitFileName ? (
+                <div className="flex items-center gap-2">
+                  <FileImage className="h-6 w-6 text-primary" />
+                  <span className="text-xs font-medium text-foreground">{partnerPortraitFileName}</span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <ImagePlus className="mx-auto h-6 w-6 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">{t("eastern.image.portraitClick")}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.chartOptional")}</p>
+            <input
+              ref={partnerChartInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handlePartnerChartFile(e.target.files[0])}
+            />
+            <div
+              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
+              onClick={() => partnerChartInputRef.current?.click()}
+            >
+              {partnerChartPreview ? (
+                <div className="relative">
+                  <img src={partnerChartPreview} alt="Chart preview" className="max-h-48 rounded-lg" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPartnerChartPreview(null);
+                      setPartnerChartFileName("");
+                      setPartnerChartFile(null);
+                      if (partnerChartInputRef.current) partnerChartInputRef.current.value = "";
+                    }}
+                    className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : partnerChartFileName ? (
+                <div className="flex items-center gap-2">
+                  <FileImage className="h-6 w-6 text-primary" />
+                  <span className="text-xs font-medium text-foreground">{partnerChartFileName}</span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">{t("eastern.image.chartClick")}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Button onClick={() => void runGeneratePartnerImage()} disabled={loading} className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            {loading ? t("eastern.image.generating") : t("eastern.image.generate")}
+          </Button>
+          <Button variant="outline" onClick={clearPartnerInputs} disabled={loading}>
+            {t("eastern.image.clearInputs")}
+          </Button>
+        </div>
+
+        {(loading || (partnerPortraitPreview || partnerChartPreview)) && (
+          <div className="rounded-xl border border-border bg-background p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
+              <p className="text-sm font-medium text-foreground">{t("eastern.image.slowTitle")}</p>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.slowDesc")}</p>
+          </div>
+        )}
+      </Card>
+    </Reveal>
+  );
+};
+
+type EasternProfileReadingBlockProps = {
+  t: (key: string) => string;
+  loading: boolean;
+  runAnalyze: () => Promise<void>;
+  result: EasternResult | null;
+  highlightId: string | null;
+  setOpenPalaceId: (id: string | null) => void;
+  focusSection: (id: string) => void;
+  scrollToId: (id: string) => void;
+  renderMarkdown: (text: string) => React.ReactNode;
+  splitParagraphs: (text: string) => string[];
+  slugify: (value: string) => string;
+  isPalaceSectionTitle: (title: string) => boolean;
+  qaOpen: boolean;
+  setQaOpen: (open: boolean) => void;
+  qaSessionKey: string | null;
+  lastReadingId: string | null;
+  profile: unknown;
+  selectedOption: string | null;
+};
+
+const EasternProfileReadingBlock = ({
+  t,
+  loading,
+  runAnalyze,
+  result,
+  highlightId,
+  setOpenPalaceId,
+  focusSection,
+  scrollToId,
+  renderMarkdown,
+  splitParagraphs,
+  slugify,
+  isPalaceSectionTitle,
+  qaOpen,
+  setQaOpen,
+  qaSessionKey,
+  lastReadingId,
+  profile,
+  selectedOption,
+}: EasternProfileReadingBlockProps) => {
+  return (
+    <Reveal from="up" offset={18} delay={0.05}>
+      <Card className="p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">{t("eastern.profileReading.title")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.profileReading.desc")}</p>
+          </div>
+          <Button
+            size="lg"
+            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity sm:w-auto"
+            onClick={() => void runAnalyze()}
+            disabled={loading}
+          >
+            {loading ? t("eastern.profileReading.analyzing") : t("eastern.profileReading.start")}
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="mt-4 rounded-xl border border-border bg-background p-4">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
+              <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.loading.desc")}</p>
+          </div>
+        )}
+
+        {result && (
+          <Reveal className="mt-6" from="up" offset={18} delay={0.05}>
+            <EasternAnalysisResult
+              t={t}
+              result={result}
+              highlightId={highlightId}
+              setOpenPalaceId={setOpenPalaceId}
+              focusSection={focusSection}
+              scrollToId={scrollToId}
+              renderMarkdown={renderMarkdown}
+              splitParagraphs={splitParagraphs}
+              slugify={slugify}
+              isPalaceSectionTitle={isPalaceSectionTitle}
+              qaOpen={qaOpen}
+              setQaOpen={setQaOpen}
+              qaSessionKey={qaSessionKey}
+              lastReadingId={lastReadingId}
+              profile={profile}
+              selectedOption={selectedOption}
+            />
+          </Reveal>
+        )}
+      </Card>
+    </Reveal>
+  );
+};
+
 const EasternAstrology = () => {
   const { t, lang } = useI18n();
 
@@ -729,314 +1189,81 @@ const EasternAstrology = () => {
           </Reveal>
         ) : (
           <div className="space-y-4">
-            <Reveal from="up" offset={18}>
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); }}>
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Link to="/history">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Clock className="h-4 w-4" animate={true} />
-                      <span className="hidden sm:inline">{t("eastern.history")}</span>
-                    </Button>
-                  </Link>
-
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                  {(() => {
-                    const selectedOptionData = options.find((o) => o.id === selectedOption);
-                    const SelectedIcon = selectedOptionData?.icon;
-                    return (
-                      <>
-                        <div className={`h-4 w-4 shrink-0 items-center justify-center rounded-lg ${selectedOptionData?.id === "image" ? "bg-gold/15" : "bg-primary/10"} flex`}>
-                          {SelectedIcon && <SelectedIcon className={`h-3 w-3 ${selectedOptionData?.id === "image" ? "text-gold" : "text-primary"}`} />}
-                        </div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {selectedOptionData ? t(selectedOptionData.labelKey) : ""}
-                        </p>
-                      </>
-                    );
-                  })()}
-                </div>
-                </div>
-              </div>
-            </Reveal>
+            <EasternTopBar t={t} selectedOption={selectedOption} options={options} setSelectedOption={setSelectedOption} setResult={setResult} />
 
             {selectedOption === "upload" && (
-              <>
-                <Reveal from="up" offset={18} delay={0.05}>
-                  <Card className="p-5 shadow-sm">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-                    />
-                    <div
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {uploadPreview ? (
-                        <div className="relative">
-                          <img src={uploadPreview} alt="Chart preview" className="max-h-64 rounded-lg" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              clearUpload();
-                            }}
-                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : uploadFileName ? (
-                        <div className="flex items-center gap-2">
-                          <FileImage className="h-8 w-8 text-primary" />
-                          <span className="text-sm font-medium text-foreground">{uploadFileName}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              clearUpload();
-                            }}
-                          >
-                            <X className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-                          <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
-                        </>
-                      )}
-                    </div>
-
-                    <Button
-                      size="lg"
-                      className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
-                      onClick={() => runAnalyze()}
-                      disabled={loading || !uploadFile}
-                    >
-                      {t("eastern.upload.start")}
-                    </Button>
-
-                    {loading && (
-                      <div className="mt-4 rounded-xl border border-border bg-background p-4">
-                        <div className="flex items-center gap-2">
-                          <Activity
-                            className="h-4 w-4 text-primary"
-                            animate
-                            animateOnHover={false}
-                            animation="default-loop"
-                            loop
-                          />
-                          <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.slowNote")}</p>
-                      </div>
-                    )}
-
-                    <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
-                  </Card>
-                </Reveal>
-
-                {result && (
-                  <Reveal className="mt-6" from="up" offset={18} delay={0.08}>
-                    <EasternUploadResult
-                      t={t}
-                      result={result}
-                      highlightId={highlightId}
-                      setOpenPalaceId={setOpenPalaceId}
-                      focusSection={focusSection}
-                      scrollToId={scrollToId}
-                      renderMarkdown={renderMarkdown}
-                      splitParagraphs={splitParagraphs}
-                      slugify={slugify}
-                      isPalaceSectionTitle={isPalaceSectionTitle}
-                      qaOpen={qaOpen}
-                      setQaOpen={setQaOpen}
-                      qaSessionKey={qaSessionKey}
-                      lastReadingId={lastReadingId}
-                      profile={profile}
-                      selectedOption={selectedOption}
-                    />
-                  </Reveal>
-                )}
-              </>
+              <EasternUploadBlock
+                t={t}
+                loading={loading}
+                result={result}
+                fileInputRef={fileInputRef}
+                uploadPreview={uploadPreview}
+                uploadFileName={uploadFileName}
+                uploadFile={uploadFile}
+                handleFile={handleFile}
+                clearUpload={clearUpload}
+                runAnalyze={() => void runAnalyze()}
+                highlightId={highlightId}
+                setOpenPalaceId={setOpenPalaceId}
+                focusSection={focusSection}
+                scrollToId={scrollToId}
+                renderMarkdown={renderMarkdown}
+                splitParagraphs={splitParagraphs}
+                slugify={slugify}
+                isPalaceSectionTitle={isPalaceSectionTitle}
+                qaOpen={qaOpen}
+                setQaOpen={setQaOpen}
+                qaSessionKey={qaSessionKey}
+                lastReadingId={lastReadingId}
+                profile={profile}
+                selectedOption={selectedOption}
+              />
             )}
 
             {selectedOption === "image" && (
-              <Reveal from="up" offset={18} delay={0.05}>
-                <Card className="p-5 shadow-sm space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{t("eastern.image.inputOptions.title")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.inputOptions.desc")}</p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.portraitOptional")}</p>
-                    <input
-                      ref={partnerPortraitInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handlePartnerPortraitFile(e.target.files[0])}
-                    />
-                    <div
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
-                      onClick={() => partnerPortraitInputRef.current?.click()}
-                    >
-                      {partnerPortraitPreview ? (
-                        <div className="relative">
-                          <img src={partnerPortraitPreview} alt="Portrait preview" className="max-h-48 rounded-lg" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPartnerPortraitPreview(null);
-                              setPartnerPortraitFileName("");
-                              setPartnerPortraitFile(null);
-                              if (partnerPortraitInputRef.current) partnerPortraitInputRef.current.value = "";
-                            }}
-                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : partnerPortraitFileName ? (
-                        <div className="flex items-center gap-2">
-                          <FileImage className="h-6 w-6 text-primary" />
-                          <span className="text-xs font-medium text-foreground">{partnerPortraitFileName}</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <ImagePlus className="mx-auto h-6 w-6 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">{t("eastern.image.portraitClick")}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.chartOptional")}</p>
-                    <input
-                      ref={partnerChartInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && handlePartnerChartFile(e.target.files[0])}
-                    />
-                    <div
-                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
-                      onClick={() => partnerChartInputRef.current?.click()}
-                    >
-                      {partnerChartPreview ? (
-                        <div className="relative">
-                          <img src={partnerChartPreview} alt="Chart preview" className="max-h-48 rounded-lg" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPartnerChartPreview(null);
-                              setPartnerChartFileName("");
-                              setPartnerChartFile(null);
-                              if (partnerChartInputRef.current) partnerChartInputRef.current.value = "";
-                            }}
-                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : partnerChartFileName ? (
-                        <div className="flex items-center gap-2">
-                          <FileImage className="h-6 w-6 text-primary" />
-                          <span className="text-xs font-medium text-foreground">{partnerChartFileName}</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">{t("eastern.image.chartClick")}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <Button onClick={() => void runGeneratePartnerImage()} disabled={loading} className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    {loading ? t("eastern.image.generating") : t("eastern.image.generate")}
-                  </Button>
-                  <Button variant="outline" onClick={clearPartnerInputs} disabled={loading}>
-                    {t("eastern.image.clearInputs")}
-                  </Button>
-                </div>
-
-                {(loading || (partnerPortraitPreview || partnerChartPreview)) && (
-                  <div className="rounded-xl border border-border bg-background p-4">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default-loop" loop />
-                      <p className="text-sm font-medium text-foreground">{t("eastern.image.slowTitle")}</p>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.slowDesc")}</p>
-                  </div>
-                )}
-                </Card>
-              </Reveal>
+              <EasternImageBlock
+                t={t}
+                loading={loading}
+                partnerPortraitPreview={partnerPortraitPreview}
+                partnerPortraitFileName={partnerPortraitFileName}
+                partnerPortraitInputRef={partnerPortraitInputRef}
+                handlePartnerPortraitFile={handlePartnerPortraitFile}
+                partnerChartPreview={partnerChartPreview}
+                partnerChartFileName={partnerChartFileName}
+                partnerChartInputRef={partnerChartInputRef}
+                handlePartnerChartFile={handlePartnerChartFile}
+                clearPartnerInputs={clearPartnerInputs}
+                runGeneratePartnerImage={runGeneratePartnerImage}
+                setPartnerPortraitPreview={setPartnerPortraitPreview}
+                setPartnerPortraitFileName={setPartnerPortraitFileName}
+                setPartnerPortraitFile={setPartnerPortraitFile}
+                setPartnerChartPreview={setPartnerChartPreview}
+                setPartnerChartFileName={setPartnerChartFileName}
+                setPartnerChartFile={setPartnerChartFile}
+              />
             )}
 
             {selectedOption !== "upload" && selectedOption !== "image" && (
-              <Reveal from="up" offset={18} delay={0.05}>
-                <Card className="p-5 shadow-sm">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{t("eastern.profileReading.title")}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.profileReading.desc")}</p>
-                    </div>
-                    <Button
-                      size="lg"
-                      className="w-full bg-gradient-primary hover:opacity-90 transition-opacity sm:w-auto"
-                      onClick={() => void runAnalyze()}
-                      disabled={loading}
-                    >
-                      {loading ? t("eastern.profileReading.analyzing") : t("eastern.profileReading.start")}
-                    </Button>
-                  </div>
-
-                  {loading && (
-                    <div className="mt-4 rounded-xl border border-border bg-background p-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default-loop" loop />
-                        <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.loading.desc")}</p>
-                    </div>
-                  )}
-
-                  {result && (
-                    <Reveal className="mt-6" from="up" offset={18} delay={0.05}>
-                      <EasternAnalysisResult
-                        t={t}
-                        result={result}
-                        highlightId={highlightId}
-                        setOpenPalaceId={setOpenPalaceId}
-                        focusSection={focusSection}
-                        scrollToId={scrollToId}
-                        renderMarkdown={renderMarkdown}
-                        splitParagraphs={splitParagraphs}
-                        slugify={slugify}
-                        isPalaceSectionTitle={isPalaceSectionTitle}
-                        qaOpen={qaOpen}
-                        setQaOpen={setQaOpen}
-                        qaSessionKey={qaSessionKey}
-                        lastReadingId={lastReadingId}
-                        profile={profile}
-                        selectedOption={selectedOption}
-                      />
-                    </Reveal>
-                  )}
-                </Card>
-              </Reveal>
+              <EasternProfileReadingBlock
+                t={t}
+                loading={loading}
+                runAnalyze={() => runAnalyze()}
+                result={result}
+                highlightId={highlightId}
+                setOpenPalaceId={setOpenPalaceId}
+                focusSection={focusSection}
+                scrollToId={scrollToId}
+                renderMarkdown={renderMarkdown}
+                splitParagraphs={splitParagraphs}
+                slugify={slugify}
+                isPalaceSectionTitle={isPalaceSectionTitle}
+                qaOpen={qaOpen}
+                setQaOpen={setQaOpen}
+                qaSessionKey={qaSessionKey}
+                lastReadingId={lastReadingId}
+                profile={profile}
+                selectedOption={selectedOption}
+              />
             )}
 
             {selectedOption === "image" && generatedImages.length > 0 && (

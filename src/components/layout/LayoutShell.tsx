@@ -34,12 +34,19 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       <LayoutHeader />
 
       <main className="relative flex-1 bg-gradient-to-b from-background via-background to-secondary/10">
-        <BubbleBackground interactive className="opacity-50" />
-        {config.seo && (
-          <SEOHead titleKey={config.seo.titleKey} descriptionKey={config.seo.descriptionKey} path={config.seo.path} />
-        )}
+        <BubbleBackground interactive className="absolute inset-0 z-0 opacity-50" />
 
-        <LayoutBody>{content}</LayoutBody>
+        <div className="relative z-10">
+          {config.seo && (
+            <SEOHead
+              titleKey={config.seo.titleKey}
+              descriptionKey={config.seo.descriptionKey}
+              path={config.seo.path}
+            />
+          )}
+
+          <LayoutBody>{content}</LayoutBody>
+        </div>
       </main>
 
       <LayoutFooter />

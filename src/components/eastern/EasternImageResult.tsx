@@ -25,13 +25,10 @@ function base64ToBlob(base64: string, mimeType: string) {
 
 export default function EasternImageResult({
   images,
-  imagenPrompt,
-  imagenPromptVi,
   compatibilityScore,
-  compatibilityRationale,
-  spousePortraitDirection,
 }: EasternImageResultProps) {
   const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const blobs = useMemo(() => {
     if (!images || images.length === 0) return [];
@@ -51,6 +48,17 @@ export default function EasternImageResult({
     };
   }, [blobs]);
 
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightboxIndex(null);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lightboxIndex]);
+
   if (!images || images.length === 0) return null;
 
   return (
@@ -59,46 +67,36 @@ export default function EasternImageResult({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Ảnh minh hoạ người hôn phối</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Ảnh mang tính biểu tượng, chỉ dùng để tham khảo thẩm mỹ.</p>
             {typeof compatibilityScore === "number" ? (
               <p className="mt-2 text-sm text-foreground">
                 <span className="font-medium">Tỉ lệ tương thích:</span> {compatibilityScore}%
               </p>
             ) : null}
-            {compatibilityRationale ? (
-              <p className="mt-1 text-sm text-muted-foreground">{compatibilityRationale}</p>
-            ) : null}
-            {spousePortraitDirection ? (
-              <p className="mt-2 text-sm text-muted-foreground">{spousePortraitDirection}</p>
-            ) : null}
           </div>
         </div>
-
-        {imagenPromptVi ? (
-          <details className="mt-4 rounded-xl border border-border bg-background p-4" open>
-            <summary className="cursor-pointer select-none text-sm font-medium text-foreground">Prompt (Tiếng Việt)</summary>
-            <pre className="mt-3 whitespace-pre-wrap break-words text-xs text-muted-foreground">{imagenPromptVi}</pre>
-          </details>
-        ) : null}
-
-        {imagenPrompt ? (
-          <details className="mt-4 rounded-xl border border-border bg-background p-4">
-            <summary className="cursor-pointer select-none text-sm font-medium text-foreground">Prompt (English)</summary>
-            <pre className="mt-3 whitespace-pre-wrap break-words text-xs text-muted-foreground">{imagenPrompt}</pre>
-          </details>
-        ) : null}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {images.map((img, idx) => {
           const src = objectUrls[idx];
-          const fileExt = img.mimeType === "image/jpeg" ? "jpg" : "png";
           return (
             <div key={idx} className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-              {src ? <img src={src} alt={`Generated ${idx + 1}`} className="w-full rounded-xl" /> : null}
+              {src ? (
+                <button
+                  type="button"
+                  className="block w-full"
+                  onClick={() => setLightboxIndex(idx)}
+                >
+                  <img
+                    src={src}
+                    alt={`Generated ${idx + 1}`}
+                    className="w-full rounded-xl transition-transform hover:scale-[1.01]"
+                  />
+                </button>
+              ) : null}
               <div className="mt-3 flex items-center justify-end">
                 {src ? (
-                  <a href={src} download={`partner-portrait-${idx + 1}.${fileExt}`}>
+                  <a href={src} download={`partner-portrait-${idx + 1}.jpg`}>
                     <Button size="sm" variant="outline">
                       Tải ảnh
                     </Button>
@@ -109,6 +107,35 @@ export default function EasternImageResult({
           );
         })}
       </div>
+
+      {lightboxIndex !== null && objectUrls[lightboxIndex] ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div
+            className="relative max-h-full max-w-full"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={objectUrls[lightboxIndex]}
+              alt={`Generated ${lightboxIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="absolute right-2 top-2"
+              onClick={() => setLightboxIndex(null)}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

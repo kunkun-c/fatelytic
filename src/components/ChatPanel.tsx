@@ -9,7 +9,6 @@ import { getStoredProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Json } from "@/integrations/supabase/types";
-import { TypingText, TypingTextCursor } from "@/components/animate-ui/primitives/texts/typing";
 
 export interface ChatPanelMessage {
   role: "user" | "assistant";
@@ -181,9 +180,7 @@ const ChatPanel = ({
     return true;
   }, [contextOptionId, moduleKey, showQuickActions]);
 
-  const [messages, setMessages] = useState<ChatPanelMessage[]>([
-    { role: "assistant", content: resolvedWelcome },
-  ]);
+  const [messages, setMessages] = useState<ChatPanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -193,6 +190,7 @@ const ChatPanel = ({
   const initKeyRef = useRef<string | null>(null);
   const loadedSessionRef = useRef<string | null>(null);
   const initialPromptSentRef = useRef<string | null>(null);
+  const welcomeInitializedRef = useRef(false);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -313,10 +311,11 @@ const ChatPanel = ({
 
   useEffect(() => {
     if (hydratedRef.current) return;
-    if (messages.length !== 1) return;
-    if (messages[0]?.role !== "assistant") return;
+    if (messages.length !== 0) return;
+    if (welcomeInitializedRef.current) return;
+    welcomeInitializedRef.current = true;
     setMessages([{ role: "assistant", content: resolvedWelcome }]);
-  }, [messages, resolvedWelcome]);
+  }, [resolvedWelcome, messages.length]);
 
   const appendAssistantText = useCallback((text: string) => {
     setMessages((prev) =>
@@ -469,8 +468,6 @@ const ChatPanel = ({
 
   const actions = quickActions && quickActions.length > 0 ? quickActions : defaultActions;
 
-  const typingTexts = useMemo(() => [t("chat.typing.reply"), t("chat.typing.thinking")], [t]);
-
   return (
     <div className={className}>
       <div
@@ -488,15 +485,10 @@ const ChatPanel = ({
             >
               {msg.role === "assistant" ? (
                 typing && i === assistantIndexRef.current && !msg.content.trim() ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <TypingText
-                      text={typingTexts}
-                      duration={55}
-                      loop
-                      holdDelay={700}
-                      inView
-                    />
-                    <TypingTextCursor className="text-muted-foreground" />
+                  <span className="flex justify-center gap-2 py-2">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]"></span>
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]"></span>
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></span>
                   </span>
                 ) : (
                   <div
