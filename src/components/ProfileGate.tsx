@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Lunar } from "lunar-javascript";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { getStoredProfile, setStoredProfile, type UserProfile } from "@/lib/profile";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 
 interface ProfileGateProps {
   children?: React.ReactNode;
@@ -187,8 +189,8 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
 
   if (loading || hydrating) {
     return (
-      <div className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -264,16 +266,21 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
   };
 
   return (
-    <div className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-10">
+    <div className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center py-10">
       <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8">
-        <div className="mb-6 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("profile.tagline")}</p>
-          <h1 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">{t("profile.title")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t("profile.subtitle")}</p>
-          <p className="mt-2 text-xs text-muted-foreground">{t("profile.timeNote")}</p>
-        </div>
+        <Reveal from="up" offset={18}>
+          <div className="mb-6 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("profile.tagline")}</p>
+            <h1 className="mt-2 text-2xl font-bold text-foreground sm:text-3xl">
+              <GradientText text={t("profile.title")} />
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">{t("profile.subtitle")}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t("profile.timeNote")}</p>
+          </div>
+        </Reveal>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <Reveal from="up" offset={18} delay={0.05}>
+          <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="profile-full-name">{t("profile.fullName")}</Label>
             <Input
@@ -411,7 +418,8 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
           <Button type="submit" size="lg" className="w-full" disabled={saving}>
             {saving ? t("profile.saving") : t("profile.save")}
           </Button>
-        </form>
+          </form>
+        </Reveal>
       </div>
     </div>
   );

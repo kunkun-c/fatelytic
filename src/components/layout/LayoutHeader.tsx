@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
-import { Menu, X, User, ChevronDown, LogOut } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Menu, X, User, ChevronDown, LogOut, Globe } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Highlight, HighlightItem } from "@/components/animate-ui/primitives/effects/highlight";
 import { useI18n } from "@/lib/i18n";
 import { APP_INITIAL, APP_NAME } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
@@ -11,17 +12,41 @@ export default function LayoutHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
-  const { t } = useI18n();
+  const { t, lang, setLang } = useI18n();
   const { user, signOut } = useAuth();
+
+  const avatarSrc =
+    (user?.user_metadata?.avatar_url as string | undefined) ??
+    (user?.user_metadata?.picture as string | undefined) ??
+    undefined;
 
   const navItems = [
     { label: t("nav.overview"), path: "/overview" },
-    { label: t("nav.explore"), path: "/dashboard" },
+    { label: t("nav.explore"), path: "/explore" },
     { label: t("nav.easternAstrology"), path: "/eastern-astrology", highlight: true },
-    { label: t("nav.consultation"), path: "/chat" },
+    { label: t("nav.consultation"), path: "/consultation" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
+  const [navActive, setNavActive] = useState(location.pathname);
+
+  const [langActive, setLangActive] = useState(lang);
+
+  const langItems = useMemo(
+    () => [
+      { value: "vi" as const, label: "VI" },
+      { value: "en" as const, label: "EN" },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    setNavActive(location.pathname);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setLangActive(lang);
+  }, [lang]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
@@ -31,25 +56,76 @@ export default function LayoutHeader() {
           {APP_NAME}
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <Highlight
+          as="nav"
+          mode="parent"
+          controlledItems
+          hover={false}
+          click={false}
+          value={navActive}
+          exitDelay={120}
+          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+          className="rounded-full bg-background/80 shadow-md shadow-foreground/5 ring-1 ring-border/60"
+          containerClassName="hidden items-center gap-2 rounded-full bg-secondary/60 p-1 md:flex"
+          boundsOffset={{ top: 0, left: 0, width: 0, height: 0 }}
+        >
           {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`rounded-full px-3 py-2 text-sm font-medium transition-colors cursor-pointer ${
-                isActive(item.path)
-                  ? "bg-secondary text-foreground"
-                  : (item as { highlight?: boolean }).highlight
-                    ? "text-gradient-primary font-semibold hover:opacity-80"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
-            >
-              {item.label}
-            </Link>
+            <HighlightItem key={item.path} value={item.path} asChild>
+              <Link
+                to={item.path}
+                onMouseEnter={() => setNavActive(item.path)}
+                onMouseLeave={() => setNavActive(location.pathname)}
+                className={`relative rounded-full px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer select-none ${
+                  isActive(item.path)
+                    ? "text-foreground"
+                    : (item as { highlight?: boolean }).highlight
+                      ? "text-gradient-primary font-semibold hover:opacity-80"
+                      : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
+            </HighlightItem>
           ))}
-        </nav>
+        </Highlight>
 
         <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/70 text-muted-foreground">
+              <Globe className="h-4 w-4" />
+            </div>
+            <Highlight
+              as="div"
+              mode="parent"
+              controlledItems
+              hover={false}
+              click={false}
+              value={langActive}
+              exitDelay={120}
+              transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              className="rounded-full bg-background/80 shadow-sm shadow-foreground/5"
+              containerClassName="flex items-center gap-1 rounded-full"
+              boundsOffset={{ top: 0, left: 0, width: 0, height: 0 }}
+            >
+              {langItems.map((item) => (
+                <HighlightItem key={item.value} value={item.value} asChild>
+                  <button
+                    type="button"
+                    onClick={() => setLang(item.value)}
+                    onMouseEnter={() => setLangActive(item.value)}
+                    onMouseLeave={() => setLangActive(lang)}
+                    aria-label={t(item.value === "vi" ? "lang.vi" : "lang.en")}
+                    className={`relative rounded-full px-3 py-2 text-sm font-semibold transition-colors select-none ${
+                      lang === item.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                </HighlightItem>
+              ))}
+            </Highlight>
+          </div>
+
           {user ? (
             <div className="relative">
               <button
@@ -57,11 +133,20 @@ export default function LayoutHeader() {
                 className="flex items-center gap-2 rounded-full px-2 py-1.5 transition-colors hover:bg-secondary"
               >
                 <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={avatarSrc}
+                    alt={
+                      (user.user_metadata?.full_name as string | undefined) ??
+                      (user.user_metadata?.name as string | undefined) ??
+                      user.email ??
+                      "User"
+                    }
+                    referrerPolicy="no-referrer"
+                  />
                   <AvatarFallback className="bg-primary/10 text-primary text-sm">
                     {user.email?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium text-foreground">{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0]}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
               {userMenuOpen && (
@@ -133,17 +218,62 @@ export default function LayoutHeader() {
               </Link>
             ))}
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/70 text-muted-foreground">
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <Highlight
+                    as="div"
+                    mode="parent"
+                    controlledItems
+                    hover={false}
+                    click={false}
+                    value={langActive}
+                    exitDelay={120}
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                    className="rounded-full bg-background/80 shadow-sm shadow-foreground/5"
+                    containerClassName="flex items-center gap-1 rounded-full"
+                    boundsOffset={{ top: 0, left: 0, width: 0, height: 0 }}
+                  >
+                    {langItems.map((item) => (
+                      <HighlightItem key={item.value} value={item.value} asChild>
+                        <button
+                          type="button"
+                          onClick={() => setLang(item.value)}
+                          onMouseEnter={() => setLangActive(item.value)}
+                          onMouseLeave={() => setLangActive(lang)}
+                          aria-label={t(item.value === "vi" ? "lang.vi" : "lang.en")}
+                          className={`relative rounded-full px-3 py-2 text-sm font-semibold transition-colors select-none ${
+                            lang === item.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      </HighlightItem>
+                    ))}
+                  </Highlight>
+                </div>
+              </div>
+
               {user ? (
                 <>
                   <div className="flex items-center gap-3 rounded-lg bg-secondary px-3 py-2">
                     <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={avatarSrc}
+                        alt={
+                          (user.user_metadata?.full_name as string | undefined) ??
+                          (user.user_metadata?.name as string | undefined) ??
+                          user.email ??
+                          "User"
+                        }
+                        referrerPolicy="no-referrer"
+                      />
                       <AvatarFallback className="bg-primary/10 text-primary text-sm">
                         {user.email?.charAt(0).toUpperCase() || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="text-sm font-medium text-foreground">
-                      {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0]}
-                    </div>
                   </div>
                   <Link to="/history" onClick={() => setMobileOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start">

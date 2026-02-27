@@ -1,11 +1,14 @@
 import { useLocation, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, MessageCircle, Download, Sparkles, User } from "lucide-react";
+import { ChevronDown, MessageCircle, Download, Sparkles, User } from "@/components/ui/icons";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { NumerologyResult } from "@/lib/numerology";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
+import { RollingText } from "@/components/animate-ui/primitives/texts/rolling";
 
 interface ResultState {
   result: NumerologyResult;
@@ -49,80 +52,88 @@ const Result = () => {
 
   return (
     <div className="mx-auto max-w-2xl">
-        <div className="mb-8 text-center">
+        <Reveal className="mb-8 text-center" from="up" offset={18}>
           <p className="mb-2 text-sm font-semibold text-accent">{t("result.readingFor")} {fullName}</p>
-          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{t("result.title")}</h1>
+          <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
+            <GradientText text={t("result.title")} />
+          </h1>
           <p className="text-muted-foreground">{t("result.subtitle")}</p>
-        </div>
+        </Reveal>
 
-        <div className="mb-8 grid grid-cols-3 gap-3 sm:gap-4">
-          {[
-            { label: t("result.lifePath"), value: result.lifePathNumber },
-            { label: t("result.expression"), value: result.expressionNumber },
-            { label: t("result.soulUrge"), value: result.soulUrgeNumber },
-          ].map((n) => (
-            <div key={n.label} className="rounded-xl border border-border bg-card p-4 text-center shadow-sm">
-              <p className="text-3xl font-display font-bold text-gradient-primary sm:text-4xl">{n.value}</p>
-              <p className="mt-1 text-xs font-semibold text-muted-foreground">{n.label}</p>
-            </div>
-          ))}
-        </div>
+        <Reveal className="mb-8" from="up" offset={18} delay={0.05}>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { label: t("result.lifePath"), value: result.lifePathNumber },
+              { label: t("result.expression"), value: result.expressionNumber },
+              { label: t("result.soulUrge"), value: result.soulUrgeNumber },
+            ].map((n) => (
+              <div key={n.label} className="rounded-xl border border-border bg-card p-4 text-center shadow-sm">
+                <p className="text-3xl font-display font-bold text-gradient-primary sm:text-4xl">
+                  <RollingText text={String(n.value)} inView />
+                </p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">{n.label}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
 
-        <div className="space-y-3">
-          <CollapsibleCard title={t("result.lifePathOverview")} defaultOpen>
-            <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
-          </CollapsibleCard>
+        <Reveal from="up" offset={18} delay={0.08}>
+          <div className="space-y-3">
+            <CollapsibleCard title={t("result.lifePathOverview")} defaultOpen>
+              <p className="text-sm leading-relaxed text-foreground">{result.description}</p>
+            </CollapsibleCard>
 
-          <CollapsibleCard title={t("result.strengths")}>
-            <div className="flex flex-wrap gap-2">
-              {result.strengths.map((s) => (
-                <span key={s} className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">{s}</span>
-              ))}
-            </div>
-          </CollapsibleCard>
+            <CollapsibleCard title={t("result.strengths")}>
+              <div className="flex flex-wrap gap-2">
+                {result.strengths.map((s) => (
+                  <span key={s} className="rounded-full bg-primary/10 px-3 py-1.5 text-sm font-semibold text-primary">{s}</span>
+                ))}
+              </div>
+            </CollapsibleCard>
 
-          <CollapsibleCard title={t("result.growthAreas")}>
-            <div className="flex flex-wrap gap-2">
-              {result.challenges.map((c) => (
-                <span key={c} className="rounded-full bg-gold/15 px-3 py-1.5 text-sm font-medium text-foreground">{c}</span>
-              ))}
-            </div>
-          </CollapsibleCard>
+            <CollapsibleCard title={t("result.growthAreas")}>
+              <div className="flex flex-wrap gap-2">
+                {result.challenges.map((c) => (
+                  <span key={c} className="rounded-full bg-gold/15 px-3 py-1.5 text-sm font-medium text-foreground">{c}</span>
+                ))}
+              </div>
+            </CollapsibleCard>
 
-          <CollapsibleCard title={t("result.career")}>
-            <ul className="space-y-2">
-              {result.careerSuggestions.map((c) => (
-                <li key={c} className="flex items-center gap-2 text-sm text-foreground">
-                  <span className="h-2 w-2 rounded-full bg-accent" />
-                  {c}
-                </li>
-              ))}
-            </ul>
-          </CollapsibleCard>
+            <CollapsibleCard title={t("result.career")}>
+              <ul className="space-y-2">
+                {result.careerSuggestions.map((c) => (
+                  <li key={c} className="flex items-center gap-2 text-sm text-foreground">
+                    <span className="h-2 w-2 rounded-full bg-accent" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </CollapsibleCard>
 
-          <CollapsibleCard title={t("result.relationship")}>
-            <p className="text-sm leading-relaxed text-foreground">{result.relationshipStyle}</p>
-          </CollapsibleCard>
-        </div>
+            <CollapsibleCard title={t("result.relationship")}>
+              <p className="text-sm leading-relaxed text-foreground">{result.relationshipStyle}</p>
+            </CollapsibleCard>
+          </div>
+        </Reveal>
 
         {!user && (
-          <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
-            <p className="mb-2 text-sm text-foreground">
-              {lang === "vi" 
-                ? "Đăng nhập để lưu kết quả này vào lịch sử của bạn" 
-                : "Sign in to save this reading to your history"}
-            </p>
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="gap-2">
-                <User className="h-4 w-4" />
-                {lang === "vi" ? "Đăng nhập" : "Sign In"}
-              </Button>
-            </Link>
-          </div>
+          <Reveal className="mb-6" from="up" offset={18} delay={0.08}>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
+              <p className="mb-2 text-sm text-foreground">
+                {t("result.signInToSave")}
+              </p>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  {t("result.signIn")}
+                </Button>
+              </Link>
+            </div>
+          </Reveal>
         )}
 
-        <div className="mt-8 space-y-3">
-          <Link to="/chat" state={state}>
+        <Reveal className="mt-8 space-y-3" from="up" offset={18} delay={0.1}>
+          <Link to="/consultation" state={state}>
             <Button size="lg" className="w-full gap-2 shadow-md text-base">
               <MessageCircle className="h-5 w-5" />
               {t("result.askAi")}
@@ -141,9 +152,11 @@ const Result = () => {
               <span className="shrink-0 rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold text-gold">PRO</span>
             </Button>
           </div>
-        </div>
+        </Reveal>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">{t("result.disclaimer")}</p>
+        <Reveal className="mt-6" from="none" blur={0}>
+          <p className="text-center text-xs text-muted-foreground">{t("result.disclaimer")}</p>
+        </Reveal>
       </div>
   );
 };

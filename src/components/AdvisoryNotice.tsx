@@ -1,5 +1,6 @@
-import { Info } from "lucide-react";
+import { Info } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { useState, useEffect } from "react";
 
 interface AdvisoryNoticeProps {
@@ -52,7 +53,7 @@ export default function AdvisoryNotice({ className, compact = false }: AdvisoryN
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 transition-all duration-500",
+        "flex items-start gap-3 rounded-xl border border-border bg-muted/50 px-4 py-3 transition-all duration-500 mb-4",
         compact && "px-3 py-2",
         !showFull && "px-2 py-2 bg-muted/30 border-muted/50",
         className
@@ -69,10 +70,12 @@ export default function AdvisoryNotice({ className, compact = false }: AdvisoryN
         />
       </div>
       {showFull && (
-        <p className={cn("text-muted-foreground leading-relaxed animate-fade-in", compact ? "text-xs" : "text-sm")}>
-          Nội dung được tạo bởi trí tuệ nhân tạo, chỉ mang tính tham khảo và hỗ trợ tự suy ngẫm.
-          Không thay thế tư vấn y tế, pháp lý hay tài chính chuyên môn.
-        </p>
+        <Reveal from="up" offset={10} blur={0}>
+          <p className={cn("text-muted-foreground leading-relaxed", compact ? "text-xs" : "text-sm")}>
+            Nội dung được tạo bởi trí tuệ nhân tạo, chỉ mang tính tham khảo và hỗ trợ tự suy ngẫm.
+            Không thay thế tư vấn y tế, pháp lý hay tài chính chuyên môn.
+          </p>
+        </Reveal>
       )}
     </div>
   );

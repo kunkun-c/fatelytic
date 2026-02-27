@@ -15,7 +15,8 @@ export function LayoutConfigProvider({ children }: { children: React.ReactNode }
     setConfigState(DEFAULT_LAYOUT_CONFIG);
   }, []);
 
-  const value = useMemo(() => ({ config, setConfig, resetConfig }), [config, resetConfig, setConfig]);
+  // eslint_disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ config, setConfig, resetConfig }), [config, setConfig, resetConfig]);
 
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
 }

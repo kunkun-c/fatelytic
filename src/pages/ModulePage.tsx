@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock } from "@/components/ui/icons";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 
 interface ModulePageProps {
   moduleKey: "numerology" | "eastern" | "western" | "tarot" | "iching" | "career";
@@ -75,7 +77,7 @@ const ModulePage = ({ moduleKey }: ModulePageProps) => {
   });
 
   const handleStart = () => {
-    navigate("/chat", {
+    navigate("/consultation", {
       state: {
         module: moduleKey,
         initialPrompt: prompt.trim() || undefined,
@@ -87,45 +89,51 @@ const ModulePage = ({ moduleKey }: ModulePageProps) => {
   if (moduleMeta.isComingSoon) {
     return (
       <div className="mx-auto max-w-2xl">
-          <div className="mb-8 text-center">
+        <Reveal from="up" offset={18}>
+          <div className="mb-10 text-center">
             <p className="mb-2 text-sm font-semibold text-accent">{t("app.name")}</p>
-            <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{moduleMeta.title}</h1>
+            <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+              <GradientText text={moduleMeta.title} />
+            </h1>
             <p className="text-muted-foreground">{moduleMeta.desc}</p>
           </div>
+        </Reveal>
 
-          <div className="rounded-xl border border-border bg-card p-8 shadow-sm text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Clock className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="mb-2 text-xl font-semibold text-foreground">Sắp Ra Mắt</h2>
-            <p className="mb-6 text-muted-foreground">
-              Tính năng này đang được phát triển. Hãy thử các công cụ đã sẵn sàng bên dưới.
-            </p>
+        <Reveal from="up" offset={18} delay={0.05}>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="mb-2 text-xl font-semibold text-foreground">{t("common.comingSoon")}</h2>
+            <p className="mb-6 text-muted-foreground">{t("dashboard.comingSoon")}</p>
             <div className="space-y-3">
               <Link to="/eastern-astrology">
                 <Button size="lg" className="w-full bg-gradient-primary hover:opacity-90 transition-opacity">
-                  Thử Tử Vi Phương Đông
+                  {t("overview.tryEastern")}
                 </Button>
               </Link>
-              <Link to="/dashboard">
+              <Link to="/explore">
                 <Button variant="outline" size="lg" className="w-full">
-                  Khám Phá Công Cụ Khác
+                  {t("overview.explore")}
                 </Button>
               </Link>
             </div>
           </div>
-        </div>
+        </Reveal>
+      </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl">
+      <Reveal from="up" offset={18}>
         <div className="mb-8 text-center">
           <p className="mb-2 text-sm font-semibold text-accent">{t("app.name")}</p>
-          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{moduleMeta.title}</h1>
+          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+            <GradientText text={moduleMeta.title} />
+          </h1>
           <p className="text-muted-foreground">{moduleMeta.desc}</p>
         </div>
+      </Reveal>
 
+      <Reveal from="up" offset={18} delay={0.05}>
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <label className="mb-2 block text-sm font-medium text-foreground">{t("module.promptPlaceholder")}</label>
           <Input
@@ -140,7 +148,8 @@ const ModulePage = ({ moduleKey }: ModulePageProps) => {
             </Button>
           </div>
         </div>
-      </div>
+      </Reveal>
+    </div>
   );
 };
 

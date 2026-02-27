@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from "lucide-react";
+import { Send } from "@/components/ui/icons";
 import { useI18n } from "@/lib/i18n";
 import { APP_STORAGE_PREFIX } from "@/lib/brand";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { getStoredProfile } from "@/lib/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Json } from "@/integrations/supabase/types";
+import { TypingText, TypingTextCursor } from "@/components/animate-ui/primitives/texts/typing";
 
 export interface ChatPanelMessage {
   role: "user" | "assistant";
@@ -40,10 +41,10 @@ type ChatPanelProps = {
 };
 
 const defaultQuickActions: Array<{ label: string; prompt: string }> = [
-  { label: "Giải thích kết quả", prompt: "Hãy giải thích chi tiết kết quả của tôi." },
-  { label: "Điểm mạnh/yếu", prompt: "Hãy chỉ ra điểm mạnh/yếu chính và gợi ý cải thiện." },
-  { label: "Sự nghiệp", prompt: "Hãy tư vấn định hướng sự nghiệp phù hợp." },
-  { label: "Tình cảm", prompt: "Hãy phân tích tình cảm/hôn nhân và lời khuyên thực tế." },
+  { label: "chatPanel.qa.explain", prompt: "chatPanel.qp.explain" },
+  { label: "chatPanel.qa.strengths", prompt: "chatPanel.qp.strengths" },
+  { label: "chatPanel.qa.career", prompt: "chatPanel.qp.career" },
+  { label: "chatPanel.qa.love", prompt: "chatPanel.qp.love" },
 ];
 
 const quickActionsByModule: Record<
@@ -51,79 +52,79 @@ const quickActionsByModule: Record<
   Array<{ label: string; prompt: string }>
 > = {
   numerology: [
-    { label: "Giải thích kết quả", prompt: "Hãy giải thích chi tiết kết quả thần số học của tôi." },
-    { label: "Điểm mạnh/yếu", prompt: "Hãy chỉ ra 3 điểm mạnh và 3 điểm cần cải thiện, kèm ví dụ cụ thể." },
-    { label: "Thói quen", prompt: "Hãy gợi ý 5 thói quen thực tế để phát huy điểm mạnh và giảm điểm yếu." },
-    { label: "Câu hỏi gợi mở", prompt: "Hãy đặt 5 câu hỏi phản chiếu để tôi tự hiểu mình sâu hơn." },
+    { label: "chatPanel.module.numerology.qa.explain", prompt: "chatPanel.module.numerology.qp.explain" },
+    { label: "chatPanel.module.numerology.qa.strengths", prompt: "chatPanel.module.numerology.qp.strengths" },
+    { label: "chatPanel.module.numerology.qa.habits", prompt: "chatPanel.module.numerology.qp.habits" },
+    { label: "chatPanel.module.numerology.qa.reflect", prompt: "chatPanel.module.numerology.qp.reflect" },
   ],
   western: [
-    { label: "Tổng quan", prompt: "Hãy tóm tắt 7-10 ý chính từ góc nhìn chiêm tinh Tây phương (mang tính phản chiếu)." },
-    { label: "Cảm xúc", prompt: "Hãy phân tích khuynh hướng cảm xúc và cách tôi tự điều chỉnh khi căng thẳng." },
-    { label: "Công việc", prompt: "Hãy gợi ý hướng nghề nghiệp phù hợp và 1-2 bước thử nghiệm trong 2 tuần." },
-    { label: "Điểm mù", prompt: "Hãy chỉ ra 2-3 'điểm mù' hành vi và cách khắc phục thực tế." },
+    { label: "chatPanel.module.western.qa.overview", prompt: "chatPanel.module.western.qp.overview" },
+    { label: "chatPanel.module.western.qa.emotion", prompt: "chatPanel.module.western.qp.emotion" },
+    { label: "chatPanel.module.western.qa.work", prompt: "chatPanel.module.western.qp.work" },
+    { label: "chatPanel.module.western.qa.blindspots", prompt: "chatPanel.module.western.qp.blindspots" },
   ],
   tarot: [
-    { label: "Làm rõ lựa chọn", prompt: "Hãy giúp tôi làm rõ 2-3 lựa chọn hiện tại: ưu/nhược và hành động tiếp theo." },
-    { label: "Trạng thái cảm xúc", prompt: "Hãy phản chiếu trạng thái cảm xúc của tôi và nhu cầu cốt lõi đang bị bỏ quên." },
-    { label: "Rủi ro", prompt: "Hãy nêu rủi ro lớn nhất nếu tôi hành động vội, và cách giảm rủi ro." },
-    { label: "Thông điệp", prompt: "Hãy tóm tắt thông điệp chính thành 5 gạch đầu dòng + 1 câu hỏi để tôi tự trả lời." },
+    { label: "chatPanel.module.tarot.qa.clarify", prompt: "chatPanel.module.tarot.qp.clarify" },
+    { label: "chatPanel.module.tarot.qa.emotion", prompt: "chatPanel.module.tarot.qp.emotion" },
+    { label: "chatPanel.module.tarot.qa.risk", prompt: "chatPanel.module.tarot.qp.risk" },
+    { label: "chatPanel.module.tarot.qa.message", prompt: "chatPanel.module.tarot.qp.message" },
   ],
   iching: [
-    { label: "Diễn giải", prompt: "Hãy diễn giải quẻ theo tinh thần Kinh Dịch: bối cảnh, xu hướng, và điều nên giữ." },
-    { label: "Hành động", prompt: "Hãy đề xuất 3 bước hành động nhỏ trong 7 ngày tới phù hợp với thông điệp quẻ." },
-    { label: "Điều nên tránh", prompt: "Hãy nêu 3 điều nên tránh (thiên kiến/hành vi) và dấu hiệu cảnh báo sớm." },
-    { label: "Câu hỏi", prompt: "Hãy đề xuất 5 câu hỏi phản chiếu để tôi tự kiểm chứng." },
+    { label: "chatPanel.module.iching.qa.interpret", prompt: "chatPanel.module.iching.qp.interpret" },
+    { label: "chatPanel.module.iching.qa.actions", prompt: "chatPanel.module.iching.qp.actions" },
+    { label: "chatPanel.module.iching.qa.avoid", prompt: "chatPanel.module.iching.qp.avoid" },
+    { label: "chatPanel.module.iching.qa.questions", prompt: "chatPanel.module.iching.qp.questions" },
   ],
   career: [
-    { label: "Mục tiêu", prompt: "Hãy giúp tôi làm rõ mục tiêu nghề nghiệp 3-6 tháng tới và tiêu chí đo lường." },
-    { label: "Lộ trình", prompt: "Hãy đề xuất lộ trình 4 tuần (theo tuần) với các đầu việc cụ thể." },
-    { label: "CV/Portfolio", prompt: "Hãy gợi ý cách cải thiện CV/portfolio theo vai trò tôi đang nhắm tới." },
-    { label: "Câu hỏi phỏng vấn", prompt: "Hãy gợi ý 10 câu hỏi phỏng vấn và cách trả lời theo STAR." },
+    { label: "chatPanel.module.career.qa.goals", prompt: "chatPanel.module.career.qp.goals" },
+    { label: "chatPanel.module.career.qa.roadmap", prompt: "chatPanel.module.career.qp.roadmap" },
+    { label: "chatPanel.module.career.qa.cv", prompt: "chatPanel.module.career.qp.cv" },
+    { label: "chatPanel.module.career.qa.interview", prompt: "chatPanel.module.career.qp.interview" },
   ],
 };
 
 const easternQuickActionsByOptionId: Record<string, Array<{ label: string; prompt: string }>> = {
   overview: [
-    { label: "Tóm tắt", prompt: "Hãy tóm tắt 7-10 ý chính từ phần luận giải tổng quan." },
-    { label: "Điểm mạnh", prompt: "Hãy nêu 3 điểm mạnh nổi bật và cách tận dụng trong đời sống." },
-    { label: "Điểm cần lưu ý", prompt: "Hãy nêu 3 rủi ro/điểm cần lưu ý và cách phòng tránh thực tế." },
-    { label: "Câu hỏi", prompt: "Hãy gợi ý 5 câu hỏi hay để tôi hỏi tiếp cho đúng trọng tâm." },
+    { label: "chatPanel.eastern.qa.summary", prompt: "chatPanel.eastern.qp.overview.summary" },
+    { label: "chatPanel.eastern.qa.strengths", prompt: "chatPanel.eastern.qp.overview.strengths" },
+    { label: "chatPanel.eastern.qa.watchouts", prompt: "chatPanel.eastern.qp.overview.watchouts" },
+    { label: "chatPanel.eastern.qa.followups", prompt: "chatPanel.eastern.qp.overview.followups" },
   ],
   career: [
-    { label: "Hướng đi", prompt: "Hãy gợi ý 2-3 hướng đi nghề nghiệp phù hợp + trade-off của từng hướng." },
-    { label: "Nâng kỹ năng", prompt: "Hãy đề xuất 5 kỹ năng ưu tiên và 1 kế hoạch 14 ngày để bắt đầu." },
-    { label: "Ra quyết định", prompt: "Hãy cho tôi khung ra quyết định 3 bước khi chọn job/dự án." },
-    { label: "Rủi ro", prompt: "Hãy nêu rủi ro lớn nhất trong sự nghiệp và cách giảm rủi ro." },
+    { label: "chatPanel.eastern.career.qa.direction", prompt: "chatPanel.eastern.career.qp.direction" },
+    { label: "chatPanel.eastern.career.qa.skills", prompt: "chatPanel.eastern.career.qp.skills" },
+    { label: "chatPanel.eastern.career.qa.decisions", prompt: "chatPanel.eastern.career.qp.decisions" },
+    { label: "chatPanel.eastern.career.qa.risk", prompt: "chatPanel.eastern.career.qp.risk" },
   ],
   finance: [
-    { label: "Hệ thống tiền", prompt: "Hãy gợi ý 1 hệ thống quản trị tiền bạc đơn giản (ngân sách, tích lũy, giới hạn rủi ro)." },
-    { label: "Thiên kiến", prompt: "Hãy chỉ ra 2-3 thiên kiến ra quyết định tiền bạc và cách khắc phục." },
-    { label: "Ưu tiên", prompt: "Hãy giúp tôi đặt thứ tự ưu tiên tài chính 3-6 tháng tới." },
-    { label: "Checklist", prompt: "Hãy đưa checklist 10 mục trước khi đưa ra quyết định tài chính lớn." },
+    { label: "chatPanel.eastern.finance.qa.system", prompt: "chatPanel.eastern.finance.qp.system" },
+    { label: "chatPanel.eastern.finance.qa.bias", prompt: "chatPanel.eastern.finance.qp.bias" },
+    { label: "chatPanel.eastern.finance.qa.priority", prompt: "chatPanel.eastern.finance.qp.priority" },
+    { label: "chatPanel.eastern.finance.qa.checklist", prompt: "chatPanel.eastern.finance.qp.checklist" },
   ],
   marriage: [
-    { label: "Nhu cầu", prompt: "Hãy làm rõ nhu cầu quan hệ cốt lõi của tôi và điều tôi thường né tránh." },
-    { label: "Xung đột", prompt: "Hãy nêu 3 điểm dễ xung đột và cách giao tiếp/đặt ranh giới." },
-    { label: "Tiêu chí", prompt: "Hãy gợi ý tiêu chí lựa chọn/đồng hành phù hợp (thực tế, không định mệnh)." },
-    { label: "Câu hỏi", prompt: "Hãy gợi ý 10 câu hỏi nên trao đổi với đối tác để tránh hiểu lầm." },
+    { label: "chatPanel.eastern.marriage.qa.needs", prompt: "chatPanel.eastern.marriage.qp.needs" },
+    { label: "chatPanel.eastern.marriage.qa.conflict", prompt: "chatPanel.eastern.marriage.qp.conflict" },
+    { label: "chatPanel.eastern.marriage.qa.criteria", prompt: "chatPanel.eastern.marriage.qp.criteria" },
+    { label: "chatPanel.eastern.marriage.qa.questions", prompt: "chatPanel.eastern.marriage.qp.questions" },
   ],
   health: [
-    { label: "Stress", prompt: "Hãy chỉ ra dấu hiệu stress dễ gặp và 3 cách hạ nhiệt trong 10 phút." },
-    { label: "Thói quen", prompt: "Hãy gợi ý 5 thói quen wellbeing (ngủ, vận động, ăn uống) dễ áp dụng." },
-    { label: "Nhịp sống", prompt: "Hãy đề xuất lịch sinh hoạt mẫu 1 ngày để ổn định năng lượng." },
-    { label: "Khi nào cần gặp bác sĩ", prompt: "Hãy nêu các dấu hiệu nên gặp chuyên gia y tế (không chẩn đoán)." },
+    { label: "chatPanel.eastern.health.qa.stress", prompt: "chatPanel.eastern.health.qp.stress" },
+    { label: "chatPanel.eastern.health.qa.habits", prompt: "chatPanel.eastern.health.qp.habits" },
+    { label: "chatPanel.eastern.health.qa.rhythm", prompt: "chatPanel.eastern.health.qp.rhythm" },
+    { label: "chatPanel.eastern.health.qa.doctor", prompt: "chatPanel.eastern.health.qp.doctor" },
   ],
   fortune: [
-    { label: "Chủ đề giai đoạn", prompt: "Hãy tóm tắt chủ đề của giai đoạn hiện tại và 2-3 ưu tiên." },
-    { label: "Checklist", prompt: "Hãy đưa checklist chuẩn bị cho 1-2 tháng tới theo hướng kiểm soát được." },
-    { label: "Cơ hội", prompt: "Hãy nêu cơ hội nên chủ động nắm và cách hành động an toàn." },
-    { label: "Rủi ro", prompt: "Hãy nêu rủi ro/áp lực có thể gặp và dấu hiệu cảnh báo sớm." },
+    { label: "chatPanel.eastern.fortune.qa.theme", prompt: "chatPanel.eastern.fortune.qp.theme" },
+    { label: "chatPanel.eastern.fortune.qa.checklist", prompt: "chatPanel.eastern.fortune.qp.checklist" },
+    { label: "chatPanel.eastern.fortune.qa.opportunity", prompt: "chatPanel.eastern.fortune.qp.opportunity" },
+    { label: "chatPanel.eastern.fortune.qa.risk", prompt: "chatPanel.eastern.fortune.qp.risk" },
   ],
   upload: [
-    { label: "Tóm tắt", prompt: "Hãy tóm tắt lá số này trong 7-10 ý chính." },
-    { label: "Sự nghiệp", prompt: "Dựa trên kết quả vừa luận giải, hãy tư vấn sự nghiệp theo hướng thực tế (không định mệnh)." },
-    { label: "Tình cảm", prompt: "Dựa trên kết quả vừa luận giải, hãy phân tích tình cảm/hôn nhân và lời khuyên." },
-    { label: "Hỏi theo cung", prompt: "Hãy gợi ý 5 câu hỏi hay để hỏi theo 12 cung." },
+    { label: "chatPanel.eastern.upload.qa.summary", prompt: "chatPanel.eastern.upload.qp.summary" },
+    { label: "chatPanel.eastern.upload.qa.career", prompt: "chatPanel.eastern.upload.qp.career" },
+    { label: "chatPanel.eastern.upload.qa.love", prompt: "chatPanel.eastern.upload.qp.love" },
+    { label: "chatPanel.eastern.upload.qa.palaces", prompt: "chatPanel.eastern.upload.qp.palaces" },
   ],
 };
 
@@ -153,21 +154,21 @@ const ChatPanel = ({
     if (moduleKey.startsWith("eastern")) {
       switch (contextOptionId) {
         case "career":
-          return "Chào bạn! Mình sẽ tập trung vào Sự nghiệp & Công danh dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về công việc hiện tại, hướng đi phù hợp, hay cách ra quyết định?";
+          return t("chatPanel.eastern.welcome.career");
         case "finance":
-          return "Chào bạn! Mình sẽ tập trung vào Tài chính & Tài vận dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về tích lũy, quản trị rủi ro, hay thói quen tiền bạc?";
+          return t("chatPanel.eastern.welcome.finance");
         case "marriage":
-          return "Chào bạn! Mình sẽ tập trung vào Hôn nhân & Gia đạo dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về mối quan hệ hiện tại, tiêu chí phù hợp, hay cách giao tiếp/đặt ranh giới?";
+          return t("chatPanel.eastern.welcome.marriage");
         case "health":
-          return "Chào bạn! Mình sẽ tập trung vào Sức khoẻ & Phúc đức theo hướng wellbeing dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về thói quen, quản lý stress, hay nhịp sinh hoạt?";
+          return t("chatPanel.eastern.welcome.health");
         case "fortune":
-          return "Chào bạn! Mình sẽ tập trung vào Thời vận (Đại vận/Tiểu vận) theo hướng tham khảo dựa trên thông tin bạn cung cấp. Bạn muốn xem giai đoạn nào hoặc một mốc thời gian cụ thể?";
+          return t("chatPanel.eastern.welcome.fortune");
         case "overview":
         case "upload":
         default:
           return contextOptionId === "upload"
-            ? "Chào bạn! Mình sẽ dựa trên lá số bạn đã tải lên để trả lời. Bạn muốn làm rõ phần nào trước?"
-            : "Chào bạn! Mình sẽ dựa trên thông tin bạn cung cấp để phản chiếu và gợi ý. Bạn muốn làm rõ phần nào trước?";
+            ? t("chatPanel.eastern.welcome.upload")
+            : t("chatPanel.eastern.welcome.default");
       }
     }
 
@@ -191,6 +192,7 @@ const ChatPanel = ({
   const hydratedRef = useRef(false);
   const initKeyRef = useRef<string | null>(null);
   const loadedSessionRef = useRef<string | null>(null);
+  const initialPromptSentRef = useRef<string | null>(null);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -314,8 +316,7 @@ const ChatPanel = ({
     if (messages.length !== 1) return;
     if (messages[0]?.role !== "assistant") return;
     setMessages([{ role: "assistant", content: resolvedWelcome }]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedWelcome]);
+  }, [messages, resolvedWelcome]);
 
   const appendAssistantText = useCallback((text: string) => {
     setMessages((prev) =>
@@ -452,10 +453,11 @@ const ChatPanel = ({
 
   useEffect(() => {
     if (!initialPrompt) return;
+    if (initialPromptSentRef.current === initialPrompt) return;
+    initialPromptSentRef.current = initialPrompt;
     setInput(initialPrompt);
     void sendMessage(initialPrompt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialPrompt]);
+  }, [initialPrompt, sendMessage]);
 
   const defaultActions = useMemo(() => {
     if (moduleKey.startsWith("eastern")) {
@@ -466,6 +468,8 @@ const ChatPanel = ({
   }, [contextOptionId, moduleKey]);
 
   const actions = quickActions && quickActions.length > 0 ? quickActions : defaultActions;
+
+  const typingTexts = useMemo(() => [t("chat.typing.reply"), t("chat.typing.thinking")], [t]);
 
   return (
     <div className={className}>
@@ -484,10 +488,15 @@ const ChatPanel = ({
             >
               {msg.role === "assistant" ? (
                 typing && i === assistantIndexRef.current && !msg.content.trim() ? (
-                  <span className="flex gap-1">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.2s" }} />
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.4s" }} />
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <TypingText
+                      text={typingTexts}
+                      duration={55}
+                      loop
+                      holdDelay={700}
+                      inView
+                    />
+                    <TypingTextCursor className="text-muted-foreground" />
                   </span>
                 ) : (
                   <div
@@ -515,12 +524,13 @@ const ChatPanel = ({
                 key={action.label}
                 type="button"
                 onClick={() => {
-                  setInput(action.prompt);
-                  void sendMessage(action.prompt);
+                  const prompt = t(action.prompt);
+                  setInput(prompt);
+                  void sendMessage(prompt);
                 }}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary hover:border-primary/30"
               >
-                {action.label}
+                {t(action.label)}
               </button>
             ))}
           </div>

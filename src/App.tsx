@@ -5,7 +5,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { Analytics } from "@vercel/analytics/react";
 import { I18nProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -53,6 +55,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <Analytics />
               <Layout>
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -60,8 +63,10 @@ const App = () => (
                   <Route path="/calculator" element={<ProfileGate><Calculator /></ProfileGate>} />
                   <Route path="/numerology" element={<ProfileGate><Calculator /></ProfileGate>} />
                   <Route path="/result" element={<Result />} />
-                  <Route path="/chat" element={<ProfileGate><Chat /></ProfileGate>} />
-                  <Route path="/dashboard" element={<ProfileGate><Dashboard /></ProfileGate>} />
+                  <Route path="/consultation" element={<ProfileGate><Chat /></ProfileGate>} />
+                  <Route path="/explore" element={<ProfileGate><Dashboard /></ProfileGate>} />
+                  <Route path="/chat" element={<Navigate to="/consultation" replace />} />
+                  <Route path="/dashboard" element={<Navigate to="/explore" replace />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />

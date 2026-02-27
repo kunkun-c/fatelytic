@@ -1,4 +1,5 @@
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 
 const Privacy = () => {
   useLayoutConfig({
@@ -6,9 +7,13 @@ const Privacy = () => {
   });
 
   return (
-    <div className="mx-auto max-w-2xl animate-fade-in">
-        <h1 className="mb-6 text-2xl font-bold text-foreground sm:text-3xl">Chính Sách Bảo Mật</h1>
-        <div className="space-y-6 text-sm leading-relaxed text-foreground">
+    <div className="mx-auto max-w-2xl">
+        <Reveal from="up" offset={18}>
+          <h1 className="mb-6 text-2xl font-bold text-foreground sm:text-3xl">Chính Sách Bảo Mật</h1>
+        </Reveal>
+
+        <Reveal from="up" offset={18} delay={0.05}>
+          <div className="space-y-6 text-sm leading-relaxed text-foreground">
           <section>
             <h2 className="mb-2 text-lg font-semibold">1. Thông tin chúng tôi thu thập</h2>
             <p className="text-muted-foreground">
@@ -52,7 +57,8 @@ const Privacy = () => {
           </section>
 
           <p className="pt-4 text-xs text-muted-foreground">Cập nhật lần cuối: Tháng 2, 2026</p>
-        </div>
+          </div>
+        </Reveal>
       </div>
   );
 };

@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileImage, X, Sparkles } from "lucide-react";
+import { Upload, FileImage, X, Sparkles } from "@/components/ui/icons";
 import { useI18n } from "@/lib/i18n";
 import { getStoredProfile } from "@/lib/profile";
 import { toast } from "sonner";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 
 interface SectionItem {
   title: string;
@@ -101,8 +103,12 @@ const UploadChart = () => {
 
   return (
     <div className="mx-auto max-w-3xl">
-        <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{t("upload.title")}</h1>
+      <Reveal from="up" offset={18}>
+        <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+          <GradientText text={t("upload.title")} />
+        </h1>
         <p className="mb-8 text-muted-foreground">{t("upload.subtitle")}</p>
+      </Reveal>
 
         <div
           className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10"
@@ -140,7 +146,14 @@ const UploadChart = () => {
         </div>
 
         <Button className="mt-6 w-full" size="lg" onClick={handleAnalyze} disabled={loading || !file}>
-          {loading ? t("upload.analyzing") : t("upload.analyze")}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Sparkles className="h-4 w-4" animate animation="default" loop />
+              {t("upload.analyzing")}
+            </span>
+          ) : (
+            t("upload.analyze")
+          )}
         </Button>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">{t("upload.note")}</p>

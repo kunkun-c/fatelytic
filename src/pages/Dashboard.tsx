@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
-import { Hash, Globe, Star, Layers, BookOpen, Brain, ArrowRight } from "lucide-react";
+import { Hash, Globe, Star, Layers, BookOpen, Brain, ArrowRight, Clock } from "@/components/ui/icons";
 import { useI18n } from "@/lib/i18n";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const Dashboard = () => {
   const { t } = useI18n();
 
   useLayoutConfig({
-    seo: { titleKey: "seo.dashboard.title", descriptionKey: "seo.dashboard.desc", path: "/dashboard" },
-    showUserContextBanner: true,
-    userContextBannerClassName: "mb-6",
+    seo: { titleKey: "seo.dashboard.title", descriptionKey: "seo.dashboard.desc", path: "/explore" },
+    disableContentWrapper: false,
+    contentClassName: "container mx-auto flex max-w-3xl flex-col px-4 py-4 md:py-6",
   });
 
   const modules = [
@@ -23,29 +25,45 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <Reveal from="up" offset={18}>
         <div className="mb-10">
           <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{t("dashboard.title")}</h1>
           <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
+      </Reveal>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {modules.map((m) => (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {modules.map((m, idx) => (
+          <Reveal key={m.title} from="up" offset={18} delay={0.03 * idx}>
             <div
-              key={m.title}
-              className={`group flex items-start gap-4 rounded-xl border bg-card p-5 transition-all ${
+              className={`group relative flex items-start gap-4 rounded-xl border bg-card p-5 transition-all ${
                 m.active 
-                  ? "border-border hover:shadow-lg hover:border-primary/30 cursor-pointer" 
+                  ? "border-border hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30 cursor-pointer" 
                   : "border-border/50 opacity-60 cursor-not-allowed"
               }`}
             >
+              {!m.active && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+                      <Clock className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">{t("common.comingSoon")}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {m.active ? (
                 <Link to={m.path} className="flex items-start gap-4 w-full">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                     <m.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-display text-base font-bold text-foreground">{m.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{m.description}</p>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                      {m.description}
+                    </p>
                   </div>
                   <ArrowRight className="mt-1 h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </Link>
@@ -54,19 +72,23 @@ const Dashboard = () => {
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted">
                     <m.icon className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-display text-base font-bold text-foreground">{m.title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{m.description}</p>
-                    <p className="mt-2 text-xs font-semibold text-primary">Sắp ra mắt</p>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                      {m.description}
+                    </p>
                   </div>
                 </>
               )}
             </div>
-          ))}
-        </div>
-
-        <p className="mt-8 text-center text-xs text-muted-foreground">{t("dashboard.comingSoon")}</p>
+          </Reveal>
+        ))}
       </div>
+
+      <Reveal from="up" offset={18} delay={0.12}>
+        <p className="mt-8 text-center text-xs text-muted-foreground">{t("dashboard.comingSoon")}</p>
+      </Reveal>
+    </div>
   );
 };
 

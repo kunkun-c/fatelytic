@@ -11,8 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { getStoredProfile } from "@/lib/profile";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 
 const Calculator = () => {
   const navigate = useNavigate();
@@ -83,7 +85,7 @@ const Calculator = () => {
         if (error) {
           console.error("Error saving reading:", error);
         } else {
-          toast.success(lang === "vi" ? "Đã lưu kết quả vào lịch sử" : "Reading saved to history");
+          toast.success(t("calc.savedToHistory"));
         }
       } catch (err) {
         console.error("Failed to save reading:", err);
@@ -98,13 +100,18 @@ const Calculator = () => {
   if (profile && profile.fullName && profile.dateOfBirth) {
     return (
       <div className="mx-auto max-w-md">
+        <Reveal from="up" offset={18}>
           <div className="mb-8 text-center">
-            <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{t("calc.title")}</h1>
+            <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+              <GradientText text={t("calc.title")} />
+            </h1>
             <p className="text-muted-foreground">
-              {lang === "vi" ? "Sẵn sàng phân tích thần số học của bạn" : "Ready to analyze your numerology"}
+              {t("calc.readySubtitle")}
             </p>
           </div>
+        </Reveal>
 
+        <Reveal from="up" offset={18} delay={0.05}>
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-6 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -126,7 +133,7 @@ const Calculator = () => {
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4" animate animation="default-loop" loop />
                   {t("calc.generating")}
                 </span>
               ) : (
@@ -145,19 +152,20 @@ const Calculator = () => {
               }}
               className="mt-3 w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              {lang === "vi" ? "Chỉnh sửa thông tin" : "Edit information"}
+              {t("calc.editInfo")}
             </button>
           </div>
 
           <p className="mt-4 text-center text-xs text-muted-foreground">{t("calc.privacy")}</p>
-        </div>
+        </Reveal>
+      </div>
     );
   }
 
   if (hydrating) {
     return (
       <div className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 text-primary" animate animation="default-loop" loop />
       </div>
     );
   }
@@ -169,11 +177,16 @@ const Calculator = () => {
 
   return (
     <div className="mx-auto max-w-md">
+      <Reveal from="up" offset={18}>
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">{t("calc.title")}</h1>
+          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+            <GradientText text={t("calc.title")} />
+          </h1>
           <p className="text-muted-foreground">{t("calc.subtitle")}</p>
         </div>
+      </Reveal>
 
+      <Reveal from="up" offset={18} delay={0.05}>
         <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
           <div className="space-y-2">
             <Label htmlFor="fullName">{t("calc.fullName")}</Label>
@@ -244,7 +257,7 @@ const Calculator = () => {
           <Button type="submit" className="w-full shadow-md" size="lg" disabled={loading}>
             {loading ? (
               <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                <Loader2 className="h-4 w-4" animate animation="default-loop" loop />
                 {t("calc.generating")}
               </span>
             ) : (
@@ -252,8 +265,11 @@ const Calculator = () => {
             )}
           </Button>
         </form>
+      </Reveal>
 
+      <Reveal from="up" offset={18} delay={0.08}>
         <p className="mt-6 text-center text-xs text-muted-foreground">{t("calc.privacy")}</p>
+      </Reveal>
       </div>
   );
 };

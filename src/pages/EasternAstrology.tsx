@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, Calendar, ImagePlus, FileImage, X, ChevronDown, MessageCircle } from "lucide-react";
+import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, Calendar, ImagePlus, FileImage, X, ChevronDown, MessageCircle } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import ReactMarkdown from "react-markdown";
 import ChatPanel from "@/components/ChatPanel";
@@ -10,6 +9,7 @@ import { useI18n } from "@/lib/i18n";
 import EasternUploadResult from "@/components/eastern/EasternUploadResult";
 import EasternAnalysisResult from "@/components/eastern/EasternAnalysisResult";
 import EasternImageResult from "@/components/eastern/EasternImageResult";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { getStoredProfile } from "@/lib/profile";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,10 +62,10 @@ interface EasternResult {
 
 interface OptionItem {
   id: string;
-  label: string;
-  desc: string;
   icon: React.ElementType;
-  prompt: string;
+  labelKey: string;
+  descKey: string;
+  promptKey?: string;
 }
 
 const EasternAstrology = () => {
@@ -74,7 +74,8 @@ const EasternAstrology = () => {
   const layoutConfig = useMemo(
     () => ({
       seo: { titleKey: "seo.eastern.title", descriptionKey: "seo.eastern.desc", path: "/eastern-astrology" },
-      disableContentWrapper: true,
+      disableContentWrapper: false,
+      contentClassName: "container mx-auto flex max-w-3xl flex-col px-4 py-4 md:py-6",
       showAdvisoryNotice: true,
       advisoryNoticeCompact: true,
     }),
@@ -86,7 +87,6 @@ const EasternAstrology = () => {
   const location = useLocation();
   const profile = getStoredProfile();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [extraQuestion, setExtraQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<EasternResult | null>(null);
   const [streamingText, setStreamingText] = useState("");
@@ -123,6 +123,7 @@ const EasternAstrology = () => {
   const [qaOpen, setQaOpen] = useState(false);
   const [qaSessionKey, setQaSessionKey] = useState<string | null>(null);
   const [lastReadingId, setLastReadingId] = useState<string | null>(null);
+  const [hoveredOptionId, setHoveredOptionId] = useState<string | null>(null);
 
   const profileSummary = useMemo(() => {
     if (!profile) return "";
@@ -141,7 +142,7 @@ const EasternAstrology = () => {
 
   const handlePartnerPortraitFile = (selected: File) => {
     if (!selected.type.match(/image\/(png|jpeg|jpg)/)) {
-      toast.error("Vui lòng chọn ảnh PNG hoặc JPEG.");
+      toast.error(t("eastern.toast.invalidImage"));
       return;
     }
     setPartnerPortraitFile(selected);
@@ -153,7 +154,7 @@ const EasternAstrology = () => {
 
   const handlePartnerChartFile = (selected: File) => {
     if (!selected.type.match(/image\/(png|jpeg|jpg)/)) {
-      toast.error("Vui lòng chọn ảnh PNG hoặc JPEG.");
+      toast.error(t("eastern.toast.invalidImage"));
       return;
     }
     setPartnerChartFile(selected);
@@ -221,19 +222,66 @@ const EasternAstrology = () => {
   };
 
   const options: OptionItem[] = [
-    { id: "upload", label: "Tải lá số", desc: "Upload ảnh lá số tử vi để luận giải chi tiết", icon: Upload, prompt: "Luận giải chi tiết lá số tử vi từ ảnh" },
-    { id: "overview", label: "Tổng quan", desc: "Phân tích tổng quan dựa trên thông tin bạn cung cấp", icon: Sparkles, prompt: "Hãy luận giải tổng quan Tử Vi/Bát Tự dựa trên thông tin cá nhân của tôi." },
-    { id: "career", label: "Sự nghiệp & Công danh", desc: "Góc nhìn về sự nghiệp dựa trên thông tin bạn cung cấp", icon: Briefcase, prompt: "Hãy phân tích sự nghiệp/công danh dựa trên thông tin cá nhân của tôi. Nêu rõ điểm mạnh, điểm yếu, rủi ro và gợi ý hành động." },
-    { id: "marriage", label: "Hôn nhân & Gia đạo", desc: "Góc nhìn quan hệ/hôn nhân dựa trên thông tin bạn cung cấp", icon: Heart, prompt: "Hãy phân tích tình duyên/hôn nhân & gia đạo dựa trên thông tin cá nhân của tôi. Tránh dự đoán định mệnh; ưu tiên gợi ý thực tế." },
-    { id: "finance", label: "Tài chính & Tài vận", desc: "Góc nhìn tài chính dựa trên thông tin bạn cung cấp", icon: Wallet, prompt: "Hãy phân tích tài chính/tài vận dựa trên thông tin cá nhân của tôi. Tập trung vào thói quen tiền bạc, rủi ro và hệ thống quản trị." },
-    { id: "health", label: "Sức khoẻ & Phúc đức", desc: "Góc nhìn wellbeing dựa trên thông tin bạn cung cấp", icon: Activity, prompt: "Hãy phân tích sức khỏe/phúc đức theo hướng wellbeing dựa trên thông tin cá nhân của tôi. Không chẩn đoán y khoa; chỉ gợi ý lối sống." },
-    { id: "fortune", label: "Thời vận & Đại vận", desc: "Gợi ý chủ đề theo giai đoạn (mang tính tham khảo)", icon: Calendar, prompt: "Hãy luận giải thời vận theo chủ đề giai đoạn (Đại vận/Tiểu vận) dựa trên thông tin cá nhân của tôi. Tránh khẳng định chắc chắn; đưa checklist chuẩn bị." },
-    { id: "image", label: "Ảnh minh hoạ người hôn phối", desc: "Tạo ảnh minh hoạ phong cách Á Đông (có thể dùng chân dung và/hoặc lá số)", icon: ImagePlus, prompt: "" },
+    {
+      id: "upload",
+      labelKey: "eastern.option.upload.label",
+      descKey: "eastern.option.upload.desc",
+      promptKey: "eastern.option.upload.prompt",
+      icon: Upload,
+    },
+    {
+      id: "overview",
+      labelKey: "eastern.option.overview.label",
+      descKey: "eastern.option.overview.desc",
+      promptKey: "eastern.option.overview.prompt",
+      icon: Sparkles,
+    },
+    {
+      id: "career",
+      labelKey: "eastern.option.career.label",
+      descKey: "eastern.option.career.desc",
+      promptKey: "eastern.option.career.prompt",
+      icon: Briefcase,
+    },
+    {
+      id: "marriage",
+      labelKey: "eastern.option.marriage.label",
+      descKey: "eastern.option.marriage.desc",
+      promptKey: "eastern.option.marriage.prompt",
+      icon: Heart,
+    },
+    {
+      id: "finance",
+      labelKey: "eastern.option.finance.label",
+      descKey: "eastern.option.finance.desc",
+      promptKey: "eastern.option.finance.prompt",
+      icon: Wallet,
+    },
+    {
+      id: "health",
+      labelKey: "eastern.option.health.label",
+      descKey: "eastern.option.health.desc",
+      promptKey: "eastern.option.health.prompt",
+      icon: Activity,
+    },
+    {
+      id: "fortune",
+      labelKey: "eastern.option.fortune.label",
+      descKey: "eastern.option.fortune.desc",
+      promptKey: "eastern.option.fortune.prompt",
+      icon: Calendar,
+    },
+    {
+      id: "image",
+      labelKey: "eastern.option.image.label",
+      descKey: "eastern.option.image.desc",
+      icon: ImagePlus,
+    },
   ];
 
   const handleFile = (selected: File) => {
     if (!selected.type.match(/image\/(png|jpeg|jpg)/)) {
-      toast.error("Vui lòng chọn ảnh PNG hoặc JPEG.");
+      toast.error(t("eastern.toast.invalidImage"));
       return;
     }
     setUploadFile(selected);
@@ -344,7 +392,7 @@ const EasternAstrology = () => {
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       console.error("Partner image generation error:", error);
-      toast.error("Không thể tạo ảnh lúc này. Vui lòng thử lại.");
+      toast.error(t("eastern.toast.imageGenerateFailed"));
     } finally {
       setLoading(false);
       abortRef.current = null;
@@ -413,10 +461,11 @@ const EasternAstrology = () => {
 
     const resolvedOptionId = optionId ?? selectedOption;
     const selected = options.find((o) => o.id === resolvedOptionId);
-    const prompt = (overrideQuestion ?? extraQuestion).trim() || selected?.prompt || t("eastern.analyze");
+    const selectedPrompt = selected?.promptKey ? t(selected.promptKey) : "";
+    const prompt = (overrideQuestion ?? "").trim() || selectedPrompt || t("eastern.analyze");
     const isUpload = resolvedOptionId === "upload";
     if (isUpload && !uploadFile) {
-      toast.error("Vui lòng chọn ảnh lá số.");
+      toast.error(t("eastern.toast.missingChartImage"));
       return;
     }
 
@@ -485,7 +534,7 @@ const EasternAstrology = () => {
         } catch (err) {
           const text = String((data as { response?: unknown })?.response ?? "");
           console.error("Eastern astrology JSON parse error:", err, text);
-          toast.error("Kết quả trả về không đúng định dạng JSON. Vui lòng thử lại.");
+          toast.error(t("eastern.toast.invalidJson"));
           return;
         }
         setResult(parsed);
@@ -630,87 +679,92 @@ const EasternAstrology = () => {
     if (option.id === "upload") {
       setSelectedOption(option.id);
       setResult(null);
-      setExtraQuestion("");
       return;
     }
     if (option.id === "image") {
       setSelectedOption(option.id);
       setResult(null);
-      setExtraQuestion("");
       clearPartnerInputs();
       return;
     }
     setSelectedOption(option.id);
     setResult(null);
-    setExtraQuestion("");
-    void runAnalyze(option.id, option.prompt);
+    void runAnalyze(option.id, option.promptKey ? t(option.promptKey) : "");
   };
 
   return (
-    <div className="container mx-auto px-3 py-6 md:px-4 md:py-8 lg:py-16">
+    <>
       <div className="mx-auto max-w-3xl space-y-6">
         {/* <UserContextBanner /> */}
 
-        <div className="text-center animate-fade-in">
+        <Reveal className="text-center" from="up" offset={18}>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">{t("module.eastern.title")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t("module.eastern.desc")}</p>
-        </div>
+        </Reveal>
 
         {!selectedOption ? (
-          <div className="grid gap-3 sm:grid-cols-2 animate-fade-in">
+          <Reveal className="grid gap-3 sm:grid-cols-2" from="up" offset={18} delay={0.05}>
             {options.map((option, idx) => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => handleOptionClick(option)}
-                className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer animate-fade-in"
-                style={{ animationDelay: `${idx * 0.04}s` }}
+                onMouseEnter={() => setHoveredOptionId(option.id)}
+                onMouseLeave={() => setHoveredOptionId(null)}
+                className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer"
               >
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${option.id === "image" ? "bg-gold/15" : "bg-primary/10"}`}>
-                  <option.icon className={`h-5 w-5 ${option.id === "image" ? "text-gold" : "text-primary"}`} />
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${option.id === "image" ? "bg-gold/15" : "bg-primary/10"}`}>
+                  <option.icon
+                    className={`h-5 w-5 ${option.id === "image" ? "text-gold" : "text-primary"}`}
+                    animate={hoveredOptionId === option.id}
+                    animateOnHover={false}
+                  />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{option.label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{option.desc}</p>
+                  <p className="text-sm font-semibold text-foreground">{t(option.labelKey)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t(option.descKey)}</p>
                 </div>
               </button>
             ))}
-          </div>
+          </Reveal>
         ) : (
-          <div className="space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); setExtraQuestion(""); }}>
-                ← Quay lại
-              </Button>
-              <div className="flex items-center gap-2">
-                <Link to="/history">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary">⏱</span>
-                    <span className="hidden sm:inline">Lịch sử</span>
-                  </Button>
-                </Link>
+          <div className="space-y-4">
+            <Reveal from="up" offset={18}>
+              <div className="flex items-center justify-between">
+                <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); }}>
+                  {t("eastern.back")}
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Link to="/history">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary">⏱</span>
+                      <span className="hidden sm:inline">{t("eastern.history")}</span>
+                    </Button>
+                  </Link>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-                {(() => {
-                  const selectedOptionData = options.find((o) => o.id === selectedOption);
-                  const SelectedIcon = selectedOptionData?.icon;
-                  return (
-                    <>
-                      <div className={`h-4 w-4 shrink-0 items-center justify-center rounded-lg ${selectedOptionData?.id === "image" ? "bg-gold/15" : "bg-primary/10"} flex`}>
-                        {SelectedIcon && <SelectedIcon className={`h-3 w-3 ${selectedOptionData?.id === "image" ? "text-gold" : "text-primary"}`} />}
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {selectedOptionData?.label}
-                      </p>
-                    </>
-                  );
-                })()}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+                  {(() => {
+                    const selectedOptionData = options.find((o) => o.id === selectedOption);
+                    const SelectedIcon = selectedOptionData?.icon;
+                    return (
+                      <>
+                        <div className={`h-4 w-4 shrink-0 items-center justify-center rounded-lg ${selectedOptionData?.id === "image" ? "bg-gold/15" : "bg-primary/10"} flex`}>
+                          {SelectedIcon && <SelectedIcon className={`h-3 w-3 ${selectedOptionData?.id === "image" ? "text-gold" : "text-primary"}`} />}
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">
+                          {selectedOptionData ? t(selectedOptionData.labelKey) : ""}
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
+                </div>
               </div>
-              </div>
-            </div>
+            </Reveal>
 
             {selectedOption === "upload" ? (
-              <Card className="p-5 shadow-sm">
+              <Reveal from="up" offset={18} delay={0.05}>
+                <Card className="p-5 shadow-sm">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -740,8 +794,8 @@ const EasternAstrology = () => {
                   ) : (
                     <>
                       <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
-                      <p className="text-sm font-semibold text-foreground">Chọn ảnh lá số tử vi</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Hỗ trợ PNG, JPEG</p>
+                      <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
                     </>
                   )}
                 </div>
@@ -752,23 +806,23 @@ const EasternAstrology = () => {
                   onClick={() => runAnalyze()}
                   disabled={loading || !uploadFile}
                 >
-                  Bắt đầu luận giải
+                  {t("eastern.upload.start")}
                 </Button>
 
-                <p className="mt-4 text-center text-xs text-muted-foreground">Ảnh sẽ được phân tích và luận giải chi tiết.</p>
-              </Card>
+                <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
+                </Card>
+              </Reveal>
             ) : selectedOption === "image" ? (
-              <Card className="p-5 shadow-sm space-y-4">
+              <Reveal from="up" offset={18} delay={0.05}>
+                <Card className="p-5 shadow-sm space-y-4">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Tuỳ chọn đầu vào</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Bạn có thể tải lên chân dung, lá số, cả hai, hoặc không tải lên gì (hệ thống sẽ tạo ảnh dựa trên thông tin hồ sơ).
-                  </p>
+                  <p className="text-sm font-semibold text-foreground">{t("eastern.image.inputOptions.title")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.inputOptions.desc")}</p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Chân dung (tuỳ chọn)</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.portraitOptional")}</p>
                     <input
                       ref={partnerPortraitInputRef}
                       type="file"
@@ -804,14 +858,14 @@ const EasternAstrology = () => {
                       ) : (
                         <div className="space-y-1">
                           <ImagePlus className="mx-auto h-6 w-6 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">Nhấn để tải ảnh chân dung</p>
+                          <p className="text-xs text-muted-foreground">{t("eastern.image.portraitClick")}</p>
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Lá số Tử Vi (tuỳ chọn)</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.chartOptional")}</p>
                     <input
                       ref={partnerChartInputRef}
                       type="file"
@@ -847,7 +901,7 @@ const EasternAstrology = () => {
                       ) : (
                         <div className="space-y-1">
                           <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">Nhấn để tải ảnh lá số</p>
+                          <p className="text-xs text-muted-foreground">{t("eastern.image.chartClick")}</p>
                         </div>
                       )}
                     </div>
@@ -857,69 +911,84 @@ const EasternAstrology = () => {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <Button onClick={() => void runGeneratePartnerImage()} disabled={loading} className="gap-2">
                     <Sparkles className="h-4 w-4" />
-                    {loading ? "Đang tạo..." : "Tạo ảnh"}
+                    {loading ? t("eastern.image.generating") : t("eastern.image.generate")}
                   </Button>
                   <Button variant="outline" onClick={clearPartnerInputs} disabled={loading}>
-                    Xoá đầu vào
+                    {t("eastern.image.clearInputs")}
                   </Button>
                 </div>
-              </Card>
+                </Card>
+              </Reveal>
             ) : (
-              <Card className="p-5 shadow-sm">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <Input
-                    value={extraQuestion}
-                    onChange={(e) => setExtraQuestion(e.target.value)}
-                    placeholder={t("module.eastern.extraQuestionPlaceholder")}
-                    className="w-full"
-                  />
-                  <Button
-                    size="lg"
-                    className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
-                    onClick={() => void runAnalyze()}
-                    disabled={loading}
-                  >
-                    Bắt đầu luận giải
-                  </Button>
-                </div>
-                {result && (
-                  <div className="mt-6">
-                    <EasternAnalysisResult
-                      t={t}
-                      result={result}
-                      highlightId={highlightId}
-                      setOpenPalaceId={setOpenPalaceId}
-                      focusSection={focusSection}
-                      scrollToId={scrollToId}
-                      renderMarkdown={renderMarkdown}
-                      splitParagraphs={splitParagraphs}
-                      slugify={slugify}
-                      isPalaceSectionTitle={isPalaceSectionTitle}
-                      qaOpen={qaOpen}
-                      setQaOpen={setQaOpen}
-                      qaSessionKey={qaSessionKey}
-                      lastReadingId={lastReadingId}
-                      profile={profile}
-                      selectedOption={selectedOption}
-                    />
+              <Reveal from="up" offset={18} delay={0.05}>
+                <Card className="p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{t("eastern.profileReading.title")}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.profileReading.desc")}</p>
+                    </div>
+                    <Button
+                      size="lg"
+                      className="w-full bg-gradient-primary hover:opacity-90 transition-opacity sm:w-auto"
+                      onClick={() => void runAnalyze()}
+                      disabled={loading}
+                    >
+                      {loading ? t("eastern.profileReading.analyzing") : t("eastern.profileReading.start")}
+                    </Button>
                   </div>
-                )}
-              </Card>
+
+                  {loading && (
+                    <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default-loop" loop />
+                        <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{t("eastern.loading.desc")}</p>
+                    </div>
+                  )}
+
+                  {result && (
+                    <Reveal className="mt-6" from="up" offset={18} delay={0.05}>
+                      <EasternAnalysisResult
+                        t={t}
+                        result={result}
+                        highlightId={highlightId}
+                        setOpenPalaceId={setOpenPalaceId}
+                        focusSection={focusSection}
+                        scrollToId={scrollToId}
+                        renderMarkdown={renderMarkdown}
+                        splitParagraphs={splitParagraphs}
+                        slugify={slugify}
+                        isPalaceSectionTitle={isPalaceSectionTitle}
+                        qaOpen={qaOpen}
+                        setQaOpen={setQaOpen}
+                        qaSessionKey={qaSessionKey}
+                        lastReadingId={lastReadingId}
+                        profile={profile}
+                        selectedOption={selectedOption}
+                      />
+                    </Reveal>
+                  )}
+                </Card>
+              </Reveal>
             )}
+
             {selectedOption === "image" && generatedImages.length > 0 && (
-              <EasternImageResult
-                images={generatedImages}
-                imagenPrompt={generatedImagenPrompt}
-                imagenPromptVi={generatedImagenPromptVi}
-                compatibilityScore={generatedCompatibilityScore}
-                compatibilityRationale={generatedCompatibilityRationale}
-                spousePortraitDirection={generatedSpousePortraitDirection}
-              />
+              <Reveal from="up" offset={18} delay={0.08}>
+                <EasternImageResult
+                  images={generatedImages}
+                  imagenPrompt={generatedImagenPrompt}
+                  imagenPromptVi={generatedImagenPromptVi}
+                  compatibilityScore={generatedCompatibilityScore}
+                  compatibilityRationale={generatedCompatibilityRationale}
+                  spousePortraitDirection={generatedSpousePortraitDirection}
+                />
+              </Reveal>
             )}
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

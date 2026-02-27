@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { AuthApiError } from "@supabase/supabase-js";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
+import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -25,28 +27,28 @@ const Login = () => {
   });
 
   // Store intended destination for post-login redirect
-  const from = location.state?.from || "/dashboard";
+  const from = location.state?.from || "/explore";
 
   const validate = () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      toast.error("Vui lòng nhập email.");
+      toast.error(t("login.validation.emailRequired"));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      toast.error("Email không hợp lệ.");
+      toast.error(t("login.validation.emailInvalid"));
       return false;
     }
     if (!password) {
-      toast.error("Vui lòng nhập mật khẩu.");
+      toast.error(t("login.validation.passwordRequired"));
       return false;
     }
     if (password.length < 6) {
-      toast.error("Mật khẩu cần ít nhất 6 ký tự.");
+      toast.error(t("login.validation.passwordMin"));
       return false;
     }
     if (isSignUp && !name.trim()) {
-      toast.error("Vui lòng nhập họ và tên.");
+      toast.error(t("login.validation.nameRequired"));
       return false;
     }
     return true;
@@ -80,22 +82,22 @@ const Login = () => {
     const code = getAuthErrorCode(error).toLowerCase();
 
     if (message.includes("invalid login credentials")) {
-      toast.error("Thông tin đăng nhập không đúng hoặc tài khoản chưa tồn tại.");
+      toast.error(t("login.error.invalidCredentials"));
       return;
     }
 
     if (code.includes("user_already_exists") || message.includes("already registered")) {
-      toast.error("Email này đã có tài khoản. Vui lòng đăng nhập hoặc dùng chức năng quên mật khẩu.");
+      toast.error(t("login.error.userAlreadyExists"));
       return;
     }
 
     if (message.includes("password") && message.includes("should")) {
-      toast.error("Mật khẩu không hợp lệ. Vui lòng dùng mật khẩu mạnh hơn.");
+      toast.error(t("login.error.passwordWeak"));
       return;
     }
 
     if (message.includes("invalid") && message.includes("email")) {
-      toast.error("Email không hợp lệ.");
+      toast.error(t("login.validation.emailInvalid"));
       return;
     }
 
@@ -160,14 +162,16 @@ const Login = () => {
   return (
     <div className="container mx-auto flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
-            {isSignUp ? t("login.createAccount") : t("login.welcome")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isSignUp ? t("login.startJourney") : t("login.continueJourney")}
-          </p>
-        </div>
+        <Reveal from="up" offset={18}>
+          <div className="mb-8 text-center">
+            <h1 className="mb-2 text-2xl font-bold text-foreground sm:text-3xl">
+              <GradientText text={isSignUp ? t("login.createAccount") : t("login.welcome")} />
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isSignUp ? t("login.startJourney") : t("login.continueJourney")}
+            </p>
+          </div>
+        </Reveal>
 
         {/* Google Login */}
         <Button

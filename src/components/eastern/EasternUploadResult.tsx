@@ -1,4 +1,4 @@
-import { ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronDown, MessageCircle } from "@/components/ui/icons";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ChatPanel from "@/components/ChatPanel";
 import React from "react";
@@ -120,7 +120,7 @@ export default function EasternUploadResult({
 
   return (
     <>
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm mb-5">
         <p className="text-xs font-medium text-muted-foreground mb-2">Chọn mục để xem nhanh</p>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -222,7 +222,7 @@ export default function EasternUploadResult({
       </details>
 
       {legacyTextSections.length > 0 && (
-        <div className="space-y-3">
+        <div className="mt-4 space-y-3">
           {legacyTextSections.map((section) => {
             const id = sectionIdForTitle(section.title);
             return (
@@ -254,7 +254,7 @@ export default function EasternUploadResult({
       {palacesToRender.length > 0 && (
         <div
           id={palacesId}
-          className={`rounded-2xl border border-border bg-card p-5 shadow-sm scroll-mt-24 transition-colors ${
+          className={`mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm scroll-mt-24 transition-colors ${
             highlightId === palacesId ? "ring-2 ring-primary/30" : ""
           }`}
         >

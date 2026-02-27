@@ -26,13 +26,13 @@ export default function LayoutFooter() {
               <Link to="/overview" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Tổng quan
               </Link>
-              <Link to="/dashboard" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/explore" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Khám phá
               </Link>
               <Link to="/eastern-astrology" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Tử vi phương đông
               </Link>
-              <Link to="/chat" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <Link to="/consultation" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 Tư vấn
               </Link>
             </div>

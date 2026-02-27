@@ -9,5 +9,6 @@ export function useLayoutConfig(next: LayoutConfig) {
   useEffect(() => {
     setConfig(next);
     return () => resetConfig();
-  }, [next, resetConfig, setConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetConfig, setConfig]);
 }

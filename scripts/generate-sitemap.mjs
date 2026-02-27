@@ -4,7 +4,30 @@ import path from "node:path";
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, "public");
 
-const baseUrl = process.env.VITE_PUBLIC_SITE_URL;
+function readEnvValueFromFile(filePath, key) {
+  if (!fs.existsSync(filePath)) return undefined;
+  const raw = fs.readFileSync(filePath, "utf8");
+  const lines = raw.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const idx = trimmed.indexOf("=");
+    if (idx <= 0) continue;
+    const k = trimmed.slice(0, idx).trim();
+    if (k !== key) continue;
+    let v = trimmed.slice(idx + 1).trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+      v = v.slice(1, -1);
+    }
+    return v;
+  }
+  return undefined;
+}
+
+const baseUrl =
+  process.env.VITE_PUBLIC_SITE_URL ||
+  readEnvValueFromFile(path.join(ROOT, ".env.local"), "VITE_PUBLIC_SITE_URL") ||
+  readEnvValueFromFile(path.join(ROOT, ".env"), "VITE_PUBLIC_SITE_URL");
 if (!baseUrl) {
   console.error("Missing env VITE_PUBLIC_SITE_URL. Example: https://example.com");
   process.exit(1);
