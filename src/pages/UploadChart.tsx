@@ -65,7 +65,7 @@ const UploadChart = () => {
     try {
       const base64 = preview.split(",")[1];
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const response = await fetch(`${supabaseUrl}/functions/v1/gemini-chat`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ const UploadChart = () => {
               content: t("upload.prompt"),
             },
           ],
-          module: "eastern",
+          module: "eastern_upload",
           lang,
           stream: false,
           responseFormat: "json",

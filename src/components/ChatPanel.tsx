@@ -16,7 +16,19 @@ export interface ChatPanelMessage {
 }
 
 type ChatPanelProps = {
-  moduleKey: "numerology" | "eastern" | "western" | "tarot" | "iching" | "career";
+  moduleKey:
+    | "numerology"
+    | "eastern"
+    | "eastern_overview"
+    | "eastern_career"
+    | "eastern_finance"
+    | "eastern_marriage"
+    | "eastern_health"
+    | "eastern_fortune"
+    | "western"
+    | "tarot"
+    | "iching"
+    | "career";
   contextJson?: unknown;
   initialPrompt?: string;
   welcomeMessage?: string;
@@ -33,6 +45,87 @@ const defaultQuickActions: Array<{ label: string; prompt: string }> = [
   { label: "Sự nghiệp", prompt: "Hãy tư vấn định hướng sự nghiệp phù hợp." },
   { label: "Tình cảm", prompt: "Hãy phân tích tình cảm/hôn nhân và lời khuyên thực tế." },
 ];
+
+const quickActionsByModule: Record<
+  Exclude<ChatPanelProps["moduleKey"], "eastern" | "eastern_overview" | "eastern_career" | "eastern_finance" | "eastern_marriage" | "eastern_health" | "eastern_fortune">,
+  Array<{ label: string; prompt: string }>
+> = {
+  numerology: [
+    { label: "Giải thích kết quả", prompt: "Hãy giải thích chi tiết kết quả thần số học của tôi." },
+    { label: "Điểm mạnh/yếu", prompt: "Hãy chỉ ra 3 điểm mạnh và 3 điểm cần cải thiện, kèm ví dụ cụ thể." },
+    { label: "Thói quen", prompt: "Hãy gợi ý 5 thói quen thực tế để phát huy điểm mạnh và giảm điểm yếu." },
+    { label: "Câu hỏi gợi mở", prompt: "Hãy đặt 5 câu hỏi phản chiếu để tôi tự hiểu mình sâu hơn." },
+  ],
+  western: [
+    { label: "Tổng quan", prompt: "Hãy tóm tắt 7-10 ý chính từ góc nhìn chiêm tinh Tây phương (mang tính phản chiếu)." },
+    { label: "Cảm xúc", prompt: "Hãy phân tích khuynh hướng cảm xúc và cách tôi tự điều chỉnh khi căng thẳng." },
+    { label: "Công việc", prompt: "Hãy gợi ý hướng nghề nghiệp phù hợp và 1-2 bước thử nghiệm trong 2 tuần." },
+    { label: "Điểm mù", prompt: "Hãy chỉ ra 2-3 'điểm mù' hành vi và cách khắc phục thực tế." },
+  ],
+  tarot: [
+    { label: "Làm rõ lựa chọn", prompt: "Hãy giúp tôi làm rõ 2-3 lựa chọn hiện tại: ưu/nhược và hành động tiếp theo." },
+    { label: "Trạng thái cảm xúc", prompt: "Hãy phản chiếu trạng thái cảm xúc của tôi và nhu cầu cốt lõi đang bị bỏ quên." },
+    { label: "Rủi ro", prompt: "Hãy nêu rủi ro lớn nhất nếu tôi hành động vội, và cách giảm rủi ro." },
+    { label: "Thông điệp", prompt: "Hãy tóm tắt thông điệp chính thành 5 gạch đầu dòng + 1 câu hỏi để tôi tự trả lời." },
+  ],
+  iching: [
+    { label: "Diễn giải", prompt: "Hãy diễn giải quẻ theo tinh thần Kinh Dịch: bối cảnh, xu hướng, và điều nên giữ." },
+    { label: "Hành động", prompt: "Hãy đề xuất 3 bước hành động nhỏ trong 7 ngày tới phù hợp với thông điệp quẻ." },
+    { label: "Điều nên tránh", prompt: "Hãy nêu 3 điều nên tránh (thiên kiến/hành vi) và dấu hiệu cảnh báo sớm." },
+    { label: "Câu hỏi", prompt: "Hãy đề xuất 5 câu hỏi phản chiếu để tôi tự kiểm chứng." },
+  ],
+  career: [
+    { label: "Mục tiêu", prompt: "Hãy giúp tôi làm rõ mục tiêu nghề nghiệp 3-6 tháng tới và tiêu chí đo lường." },
+    { label: "Lộ trình", prompt: "Hãy đề xuất lộ trình 4 tuần (theo tuần) với các đầu việc cụ thể." },
+    { label: "CV/Portfolio", prompt: "Hãy gợi ý cách cải thiện CV/portfolio theo vai trò tôi đang nhắm tới." },
+    { label: "Câu hỏi phỏng vấn", prompt: "Hãy gợi ý 10 câu hỏi phỏng vấn và cách trả lời theo STAR." },
+  ],
+};
+
+const easternQuickActionsByOptionId: Record<string, Array<{ label: string; prompt: string }>> = {
+  overview: [
+    { label: "Tóm tắt", prompt: "Hãy tóm tắt 7-10 ý chính từ phần luận giải tổng quan." },
+    { label: "Điểm mạnh", prompt: "Hãy nêu 3 điểm mạnh nổi bật và cách tận dụng trong đời sống." },
+    { label: "Điểm cần lưu ý", prompt: "Hãy nêu 3 rủi ro/điểm cần lưu ý và cách phòng tránh thực tế." },
+    { label: "Câu hỏi", prompt: "Hãy gợi ý 5 câu hỏi hay để tôi hỏi tiếp cho đúng trọng tâm." },
+  ],
+  career: [
+    { label: "Hướng đi", prompt: "Hãy gợi ý 2-3 hướng đi nghề nghiệp phù hợp + trade-off của từng hướng." },
+    { label: "Nâng kỹ năng", prompt: "Hãy đề xuất 5 kỹ năng ưu tiên và 1 kế hoạch 14 ngày để bắt đầu." },
+    { label: "Ra quyết định", prompt: "Hãy cho tôi khung ra quyết định 3 bước khi chọn job/dự án." },
+    { label: "Rủi ro", prompt: "Hãy nêu rủi ro lớn nhất trong sự nghiệp và cách giảm rủi ro." },
+  ],
+  finance: [
+    { label: "Hệ thống tiền", prompt: "Hãy gợi ý 1 hệ thống quản trị tiền bạc đơn giản (ngân sách, tích lũy, giới hạn rủi ro)." },
+    { label: "Thiên kiến", prompt: "Hãy chỉ ra 2-3 thiên kiến ra quyết định tiền bạc và cách khắc phục." },
+    { label: "Ưu tiên", prompt: "Hãy giúp tôi đặt thứ tự ưu tiên tài chính 3-6 tháng tới." },
+    { label: "Checklist", prompt: "Hãy đưa checklist 10 mục trước khi đưa ra quyết định tài chính lớn." },
+  ],
+  marriage: [
+    { label: "Nhu cầu", prompt: "Hãy làm rõ nhu cầu quan hệ cốt lõi của tôi và điều tôi thường né tránh." },
+    { label: "Xung đột", prompt: "Hãy nêu 3 điểm dễ xung đột và cách giao tiếp/đặt ranh giới." },
+    { label: "Tiêu chí", prompt: "Hãy gợi ý tiêu chí lựa chọn/đồng hành phù hợp (thực tế, không định mệnh)." },
+    { label: "Câu hỏi", prompt: "Hãy gợi ý 10 câu hỏi nên trao đổi với đối tác để tránh hiểu lầm." },
+  ],
+  health: [
+    { label: "Stress", prompt: "Hãy chỉ ra dấu hiệu stress dễ gặp và 3 cách hạ nhiệt trong 10 phút." },
+    { label: "Thói quen", prompt: "Hãy gợi ý 5 thói quen wellbeing (ngủ, vận động, ăn uống) dễ áp dụng." },
+    { label: "Nhịp sống", prompt: "Hãy đề xuất lịch sinh hoạt mẫu 1 ngày để ổn định năng lượng." },
+    { label: "Khi nào cần gặp bác sĩ", prompt: "Hãy nêu các dấu hiệu nên gặp chuyên gia y tế (không chẩn đoán)." },
+  ],
+  fortune: [
+    { label: "Chủ đề giai đoạn", prompt: "Hãy tóm tắt chủ đề của giai đoạn hiện tại và 2-3 ưu tiên." },
+    { label: "Checklist", prompt: "Hãy đưa checklist chuẩn bị cho 1-2 tháng tới theo hướng kiểm soát được." },
+    { label: "Cơ hội", prompt: "Hãy nêu cơ hội nên chủ động nắm và cách hành động an toàn." },
+    { label: "Rủi ro", prompt: "Hãy nêu rủi ro/áp lực có thể gặp và dấu hiệu cảnh báo sớm." },
+  ],
+  upload: [
+    { label: "Tóm tắt", prompt: "Hãy tóm tắt lá số này trong 7-10 ý chính." },
+    { label: "Sự nghiệp", prompt: "Dựa trên kết quả vừa luận giải, hãy tư vấn sự nghiệp theo hướng thực tế (không định mệnh)." },
+    { label: "Tình cảm", prompt: "Dựa trên kết quả vừa luận giải, hãy phân tích tình cảm/hôn nhân và lời khuyên." },
+    { label: "Hỏi theo cung", prompt: "Hãy gợi ý 5 câu hỏi hay để hỏi theo 12 cung." },
+  ],
+};
 
 const ChatPanel = ({
   moduleKey,
@@ -57,22 +150,24 @@ const ChatPanel = ({
   const resolvedWelcome = useMemo(() => {
     if (typeof welcomeMessage === "string" && welcomeMessage.trim()) return welcomeMessage;
 
-    if (moduleKey === "eastern") {
+    if (moduleKey.startsWith("eastern")) {
       switch (contextOptionId) {
         case "career":
-          return "Chào bạn! Mình sẽ tập trung vào Sự nghiệp & Công danh dựa trên lá số của bạn. Bạn muốn hỏi về công việc hiện tại, hướng đi phù hợp, hay thời điểm bứt phá?";
+          return "Chào bạn! Mình sẽ tập trung vào Sự nghiệp & Công danh dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về công việc hiện tại, hướng đi phù hợp, hay cách ra quyết định?";
         case "finance":
-          return "Chào bạn! Mình sẽ tập trung vào Tài chính & Tài vận dựa trên lá số của bạn. Bạn muốn hỏi về tích lũy, đầu tư, hay giai đoạn tài lộc?";
+          return "Chào bạn! Mình sẽ tập trung vào Tài chính & Tài vận dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về tích lũy, quản trị rủi ro, hay thói quen tiền bạc?";
         case "marriage":
-          return "Chào bạn! Mình sẽ tập trung vào Hôn nhân & Gia đạo dựa trên lá số của bạn. Bạn muốn hỏi về mối quan hệ hiện tại, tiêu chí phù hợp, hay thời điểm thuận lợi?";
+          return "Chào bạn! Mình sẽ tập trung vào Hôn nhân & Gia đạo dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về mối quan hệ hiện tại, tiêu chí phù hợp, hay cách giao tiếp/đặt ranh giới?";
         case "health":
-          return "Chào bạn! Mình sẽ tập trung vào Sức khoẻ & Phúc đức dựa trên lá số của bạn. Bạn muốn hỏi về thói quen, điểm cần lưu ý, hay giai đoạn dễ căng thẳng?";
+          return "Chào bạn! Mình sẽ tập trung vào Sức khoẻ & Phúc đức theo hướng wellbeing dựa trên thông tin bạn cung cấp. Bạn muốn hỏi về thói quen, quản lý stress, hay nhịp sinh hoạt?";
         case "fortune":
-          return "Chào bạn! Mình sẽ tập trung vào Thời vận (Đại vận/Tiểu vận) dựa trên lá số của bạn. Bạn muốn xem giai đoạn nào hoặc một mốc thời gian cụ thể?";
+          return "Chào bạn! Mình sẽ tập trung vào Thời vận (Đại vận/Tiểu vận) theo hướng tham khảo dựa trên thông tin bạn cung cấp. Bạn muốn xem giai đoạn nào hoặc một mốc thời gian cụ thể?";
         case "overview":
         case "upload":
         default:
-          return "Chào bạn! Mình sẽ dựa trên toàn bộ luận giải lá số của bạn để trả lời. Bạn muốn làm rõ phần nào trước?";
+          return contextOptionId === "upload"
+            ? "Chào bạn! Mình sẽ dựa trên lá số bạn đã tải lên để trả lời. Bạn muốn làm rõ phần nào trước?"
+            : "Chào bạn! Mình sẽ dựa trên thông tin bạn cung cấp để phản chiếu và gợi ý. Bạn muốn làm rõ phần nào trước?";
       }
     }
 
@@ -81,7 +176,7 @@ const ChatPanel = ({
 
   const resolvedShowQuickActions = useMemo(() => {
     if (typeof showQuickActions === "boolean") return showQuickActions;
-    if (moduleKey === "eastern" && contextOptionId && contextOptionId !== "overview" && contextOptionId !== "upload") return false;
+    if (moduleKey.startsWith("eastern") && contextOptionId && contextOptionId !== "overview" && contextOptionId !== "upload") return false;
     return true;
   }, [contextOptionId, moduleKey, showQuickActions]);
 
@@ -94,6 +189,8 @@ const ChatPanel = ({
   const assistantIndexRef = useRef<number | null>(null);
 
   const hydratedRef = useRef(false);
+  const initKeyRef = useRef<string | null>(null);
+  const loadedSessionRef = useRef<string | null>(null);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -101,6 +198,10 @@ const ChatPanel = ({
   const assistantContentRef = useRef<string>("");
 
   const storageKey = `${APP_STORAGE_PREFIX}-chat:${moduleKey}${storageKeySuffix ? ":" + storageKeySuffix : ""}`;
+
+  const contextJsonForInsert = useMemo(() => {
+    return (contextJson ?? null) as unknown as Json;
+  }, [contextJson]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -118,12 +219,25 @@ const ChatPanel = ({
     }
   }, [storageKey]);
 
+  const readingIdStr = useMemo(() => {
+    const readingId = (contextJson as { readingId?: unknown } | undefined)?.readingId;
+    return typeof readingId === "string" && readingId ? readingId : null;
+  }, [contextJson]);
+
   useEffect(() => {
     const init = async () => {
       if (!user?.id) return;
 
-      const readingId = (contextJson as { readingId?: unknown } | undefined)?.readingId;
-      const readingIdStr = typeof readingId === "string" && readingId ? readingId : null;
+      const initKey = `${user.id}:${moduleKey}:${readingIdStr ?? "no-reading"}`;
+      if (initKeyRef.current === initKey) return;
+      initKeyRef.current = initKey;
+
+      const localSessionKey = `${storageKey}:sessionId`;
+      const cachedSessionId = localStorage.getItem(localSessionKey);
+      if (cachedSessionId && typeof cachedSessionId === "string") {
+        setSessionId(cachedSessionId);
+        return;
+      }
 
       if (readingIdStr) {
         const { data: existing, error: selectError } = await supabase
@@ -137,6 +251,7 @@ const ChatPanel = ({
           .maybeSingle();
         if (!selectError && existing?.id) {
           setSessionId(existing.id as string);
+          localStorage.setItem(localSessionKey, existing.id as string);
           return;
         }
       }
@@ -147,22 +262,25 @@ const ChatPanel = ({
           user_id: user.id,
           module: moduleKey,
           reading_id: readingIdStr,
-          context_json: (contextJson ?? null) as unknown as Json,
+          context_json: contextJsonForInsert,
         })
         .select("id")
         .single();
 
       if (!insertError && inserted?.id) {
         setSessionId(inserted.id as string);
+        localStorage.setItem(localSessionKey, inserted.id as string);
       }
     };
 
     void init();
-  }, [contextJson, moduleKey, user?.id]);
+  }, [contextJsonForInsert, moduleKey, readingIdStr, storageKey, user?.id]);
 
   useEffect(() => {
     const load = async () => {
       if (!user?.id || !sessionId) return;
+      if (loadedSessionRef.current === sessionId) return;
+      loadedSessionRef.current = sessionId;
 
       const { data, error } = await supabase
         .from("chat_messages")
@@ -261,7 +379,7 @@ const ChatPanel = ({
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const response = await fetch(`${supabaseUrl}/functions/v1/gemini-chat`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -316,13 +434,11 @@ const ChatPanel = ({
       } catch (error) {
         console.error("Chat error:", error);
         toast.error(t("chat.error"));
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: t("chat.errorFallback"),
-          },
-        ]);
+        setMessages((prev) =>
+          prev.map((msg, idx) =>
+            idx === assistantIndexRef.current ? { ...msg, content: t("chat.errorFallback") } : msg
+          )
+        );
       } finally {
         if (saveTimerRef.current) {
           window.clearTimeout(saveTimerRef.current);
@@ -341,7 +457,15 @@ const ChatPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt]);
 
-  const actions = quickActions && quickActions.length > 0 ? quickActions : defaultQuickActions;
+  const defaultActions = useMemo(() => {
+    if (moduleKey.startsWith("eastern")) {
+      const option = contextOptionId ?? "overview";
+      return easternQuickActionsByOptionId[option] ?? easternQuickActionsByOptionId.overview;
+    }
+    return quickActionsByModule[moduleKey as keyof typeof quickActionsByModule] ?? defaultQuickActions;
+  }, [contextOptionId, moduleKey]);
+
+  const actions = quickActions && quickActions.length > 0 ? quickActions : defaultActions;
 
   return (
     <div className={className}>
@@ -359,16 +483,24 @@ const ChatPanel = ({
               }`}
             >
               {msg.role === "assistant" ? (
-                <div
-                  className="prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{
-                    __html: msg.content
-                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                      .replace(/^\d+\.\s/gm, (match) => `<br/>${match}`)
-                      .replace(/\n/g, "<br/>")
-                      .trim(),
-                  }}
-                />
+                typing && i === assistantIndexRef.current && !msg.content.trim() ? (
+                  <span className="flex gap-1">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.2s" }} />
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.4s" }} />
+                  </span>
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{
+                      __html: msg.content
+                        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                        .replace(/^\d+\.\s/gm, (match) => `<br/>${match}`)
+                        .replace(/\n/g, "<br/>")
+                        .trim(),
+                    }}
+                  />
+                )
               ) : (
                 msg.content
               )}
@@ -391,18 +523,6 @@ const ChatPanel = ({
                 {action.label}
               </button>
             ))}
-          </div>
-        )}
-
-        {typing && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-secondary px-4 py-3">
-              <span className="flex gap-1">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.2s" }} />
-                <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.4s" }} />
-              </span>
-            </div>
           </div>
         )}
       </div>

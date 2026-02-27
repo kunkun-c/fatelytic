@@ -46,7 +46,20 @@ interface RequestBody {
     mimeType: string;
   };
   lang?: "en" | "vi";
-  module?: "numerology" | "eastern" | "eastern_upload" | "western" | "tarot" | "iching" | "career";
+  module?:
+    | "numerology"
+    | "eastern"
+    | "eastern_overview"
+    | "eastern_career"
+    | "eastern_finance"
+    | "eastern_marriage"
+    | "eastern_health"
+    | "eastern_fortune"
+    | "eastern_upload"
+    | "western"
+    | "tarot"
+    | "iching"
+    | "career";
   stream?: boolean;
   responseFormat?: "json" | "text";
 }
@@ -223,7 +236,59 @@ function getSystemPrompt(
         ? "\n\nTrả về JSON hợp lệ và không thêm văn bản ngoài JSON."
         : "\n\nReturn valid JSON only and do not add any text outside JSON."
       : "";
-  return `${BASE_PROMPTS[lang]}\n\n${MODULE_PROMPTS[moduleKey][lang]}${formatLine}`;
+
+  const modulePrompt = MODULE_PROMPTS[moduleKey];
+  const promptText = modulePrompt?.[lang] ?? modulePrompt?.en;
+
+  // Defensive fallback to avoid crashing the whole function when moduleKey is unexpected.
+  const safePromptText =
+    promptText ?? MODULE_PROMPTS.numerology?.[lang] ?? MODULE_PROMPTS.numerology?.en ?? "";
+
+  return `${BASE_PROMPTS[lang]}\n\n${safePromptText}${formatLine}`;
+}
+
+function isModuleKey(value: unknown): value is keyof typeof MODULE_PROMPTS {
+  return typeof value === "string" && value in MODULE_PROMPTS;
+}
+
+function resolveModuleKey(moduleKey: keyof typeof MODULE_PROMPTS, contextJson?: unknown): keyof typeof MODULE_PROMPTS {
+  if (!moduleKey.startsWith("eastern")) return moduleKey;
+
+  // If client already passed a specific eastern_* module, keep it.
+  if (
+    moduleKey === "eastern_overview" ||
+    moduleKey === "eastern_career" ||
+    moduleKey === "eastern_finance" ||
+    moduleKey === "eastern_marriage" ||
+    moduleKey === "eastern_health" ||
+    moduleKey === "eastern_fortune" ||
+    moduleKey === "eastern_upload"
+  ) {
+    return moduleKey;
+  }
+
+  // Backward compatibility: map contextJson.optionId to a dedicated eastern prompt.
+  const optionId =
+    contextJson && typeof contextJson === "object" && !Array.isArray(contextJson) && typeof (contextJson as Record<string, unknown>).optionId === "string"
+      ? ((contextJson as Record<string, unknown>).optionId as string)
+      : null;
+
+  switch (optionId) {
+    case "career":
+      return "eastern_career";
+    case "finance":
+      return "eastern_finance";
+    case "marriage":
+      return "eastern_marriage";
+    case "health":
+      return "eastern_health";
+    case "fortune":
+      return "eastern_fortune";
+    case "overview":
+      return "eastern_overview";
+    default:
+      return "eastern";
+  }
 }
 
 function buildUserContext(context?: NumerologyContext, lang: "en" | "vi" = "en"): string {
@@ -315,7 +380,12 @@ serve(async (req: Request) => {
       });
     }
 
-    const resolvedModule = module;
+    const normalizedModule = isModuleKey(module) ? module : "numerology";
+    if (!isModuleKey(module)) {
+      console.warn("Unknown module key received; falling back to numerology:", module);
+    }
+
+    const resolvedModule = resolveModuleKey(normalizedModule, contextJson);
 
     if (!messages || messages.length === 0) {
       return new Response(JSON.stringify({ error: "No messages provided" }), {
@@ -355,7 +425,7 @@ serve(async (req: Request) => {
       if (resolvedModule === "eastern_upload") {
         generationConfig.responseSchema = getEasternUploadSchema();
         generationConfig.temperature = 0.2;
-      } else if (resolvedModule === "eastern") {
+      } else if (resolvedModule === "eastern" || String(resolvedModule).startsWith("eastern_")) {
         generationConfig.responseSchema = getEasternResultSchema();
         generationConfig.temperature = 0.4;
       }

@@ -183,12 +183,6 @@ export default function EasternUploadResult({
                 className="flex h-full flex-col"
                 heightClassName="flex-1"
                 showQuickActions
-                quickActions={[
-                  { label: "Tóm tắt nhanh", prompt: "Hãy tóm tắt lá số này trong 7-10 ý chính." },
-                  { label: "Sự nghiệp", prompt: "Dựa trên lá số này, hãy tư vấn sự nghiệp trong 12-24 tháng tới." },
-                  { label: "Tình cảm", prompt: "Dựa trên lá số này, hãy phân tích tình cảm/hôn nhân và lời khuyên." },
-                  { label: "Hỏi theo cung", prompt: "Hãy gợi ý 5 câu hỏi hay để hỏi theo 12 cung." },
-                ]}
               />
             </div>
           </div>

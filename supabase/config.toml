@@ -58,3 +58,6 @@ inspector_port = 8083
 
 [functions.gemini-chat]
 verify_jwt = false
+
+[functions.oracle-chat]
+verify_jwt = false

@@ -71,12 +71,17 @@ interface OptionItem {
 const EasternAstrology = () => {
   const { t, lang } = useI18n();
 
-  useLayoutConfig({
-    seo: { titleKey: "seo.eastern.title", descriptionKey: "seo.eastern.desc", path: "/eastern-astrology" },
-    disableContentWrapper: true,
-    showAdvisoryNotice: true,
-    advisoryNoticeCompact: true,
-  });
+  const layoutConfig = useMemo(
+    () => ({
+      seo: { titleKey: "seo.eastern.title", descriptionKey: "seo.eastern.desc", path: "/eastern-astrology" },
+      disableContentWrapper: true,
+      showAdvisoryNotice: true,
+      advisoryNoticeCompact: true,
+    }),
+    []
+  );
+
+  useLayoutConfig(layoutConfig);
   const { user } = useAuth();
   const location = useLocation();
   const profile = getStoredProfile();
@@ -90,6 +95,23 @@ const EasternAstrology = () => {
   const [uploadFileName, setUploadFileName] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [partnerPortraitPreview, setPartnerPortraitPreview] = useState<string | null>(null);
+  const [partnerPortraitFileName, setPartnerPortraitFileName] = useState("");
+  const [partnerPortraitFile, setPartnerPortraitFile] = useState<File | null>(null);
+  const partnerPortraitInputRef = useRef<HTMLInputElement>(null);
+
+  const [partnerChartPreview, setPartnerChartPreview] = useState<string | null>(null);
+  const [partnerChartFileName, setPartnerChartFileName] = useState("");
+  const [partnerChartFile, setPartnerChartFile] = useState<File | null>(null);
+  const partnerChartInputRef = useRef<HTMLInputElement>(null);
+
+  const [generatedImages, setGeneratedImages] = useState<Array<{ mimeType: string; data: string }>>([]);
+  const [generatedImagenPrompt, setGeneratedImagenPrompt] = useState<string | null>(null);
+  const [generatedImagenPromptVi, setGeneratedImagenPromptVi] = useState<string | null>(null);
+  const [generatedCompatibilityScore, setGeneratedCompatibilityScore] = useState<number | null>(null);
+  const [generatedCompatibilityRationale, setGeneratedCompatibilityRationale] = useState<string | null>(null);
+  const [generatedSpousePortraitDirection, setGeneratedSpousePortraitDirection] = useState<string | null>(null);
 
   const [openPalaceId, setOpenPalaceId] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -115,6 +137,30 @@ const EasternAstrology = () => {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "")
       .trim();
+  };
+
+  const handlePartnerPortraitFile = (selected: File) => {
+    if (!selected.type.match(/image\/(png|jpeg|jpg)/)) {
+      toast.error("Vui lòng chọn ảnh PNG hoặc JPEG.");
+      return;
+    }
+    setPartnerPortraitFile(selected);
+    setPartnerPortraitFileName(selected.name);
+    const reader = new FileReader();
+    reader.onload = (e) => setPartnerPortraitPreview(e.target?.result as string);
+    reader.readAsDataURL(selected);
+  };
+
+  const handlePartnerChartFile = (selected: File) => {
+    if (!selected.type.match(/image\/(png|jpeg|jpg)/)) {
+      toast.error("Vui lòng chọn ảnh PNG hoặc JPEG.");
+      return;
+    }
+    setPartnerChartFile(selected);
+    setPartnerChartFileName(selected.name);
+    const reader = new FileReader();
+    reader.onload = (e) => setPartnerChartPreview(e.target?.result as string);
+    reader.readAsDataURL(selected);
   };
 
   const splitParagraphs = (text: string) => {
@@ -176,13 +222,13 @@ const EasternAstrology = () => {
 
   const options: OptionItem[] = [
     { id: "upload", label: "Tải lá số", desc: "Upload ảnh lá số tử vi để luận giải chi tiết", icon: Upload, prompt: "Luận giải chi tiết lá số tử vi từ ảnh" },
-    { id: "overview", label: "Luận giải tổng quan", desc: "Phân tích toàn diện lá số dựa trên thông tin cá nhân", icon: Sparkles, prompt: "Luận giải tổng quan lá số tử vi của tôi" },
-    { id: "career", label: "Sự nghiệp & Công danh", desc: "Phân tích cung Quan Lộc và xu hướng nghề nghiệp", icon: Briefcase, prompt: "Phân tích chi tiết về sự nghiệp và công danh trong lá số tử vi của tôi" },
-    { id: "marriage", label: "Hôn nhân & Gia đạo", desc: "Luận giải cung Phu Thê và tình duyên", icon: Heart, prompt: "Phân tích chi tiết về hôn nhân, tình duyên và gia đạo trong lá số tử vi của tôi" },
-    { id: "finance", label: "Tài chính & Tài vận", desc: "Phân tích cung Tài Bạch và vận tài lộc", icon: Wallet, prompt: "Phân tích chi tiết về tài chính và tài vận trong lá số tử vi của tôi" },
-    { id: "health", label: "Sức khoẻ & Phúc đức", desc: "Luận giải cung Tật Ách và Phúc Đức", icon: Activity, prompt: "Phân tích chi tiết về sức khoẻ và phúc đức trong lá số tử vi của tôi" },
-    { id: "fortune", label: "Thời vận & Đại vận", desc: "Xem vận hạn theo từng giai đoạn cuộc đời", icon: Calendar, prompt: "Phân tích đại vận và tiểu vận trong lá số tử vi của tôi" },
-    { id: "image", label: "Ảnh minh hoạ vợ chồng", desc: "Tạo ảnh minh hoạ phong cách Á Đông", icon: ImagePlus, prompt: "" },
+    { id: "overview", label: "Tổng quan", desc: "Phân tích tổng quan dựa trên thông tin bạn cung cấp", icon: Sparkles, prompt: "Hãy luận giải tổng quan Tử Vi/Bát Tự dựa trên thông tin cá nhân của tôi." },
+    { id: "career", label: "Sự nghiệp & Công danh", desc: "Góc nhìn về sự nghiệp dựa trên thông tin bạn cung cấp", icon: Briefcase, prompt: "Hãy phân tích sự nghiệp/công danh dựa trên thông tin cá nhân của tôi. Nêu rõ điểm mạnh, điểm yếu, rủi ro và gợi ý hành động." },
+    { id: "marriage", label: "Hôn nhân & Gia đạo", desc: "Góc nhìn quan hệ/hôn nhân dựa trên thông tin bạn cung cấp", icon: Heart, prompt: "Hãy phân tích tình duyên/hôn nhân & gia đạo dựa trên thông tin cá nhân của tôi. Tránh dự đoán định mệnh; ưu tiên gợi ý thực tế." },
+    { id: "finance", label: "Tài chính & Tài vận", desc: "Góc nhìn tài chính dựa trên thông tin bạn cung cấp", icon: Wallet, prompt: "Hãy phân tích tài chính/tài vận dựa trên thông tin cá nhân của tôi. Tập trung vào thói quen tiền bạc, rủi ro và hệ thống quản trị." },
+    { id: "health", label: "Sức khoẻ & Phúc đức", desc: "Góc nhìn wellbeing dựa trên thông tin bạn cung cấp", icon: Activity, prompt: "Hãy phân tích sức khỏe/phúc đức theo hướng wellbeing dựa trên thông tin cá nhân của tôi. Không chẩn đoán y khoa; chỉ gợi ý lối sống." },
+    { id: "fortune", label: "Thời vận & Đại vận", desc: "Gợi ý chủ đề theo giai đoạn (mang tính tham khảo)", icon: Calendar, prompt: "Hãy luận giải thời vận theo chủ đề giai đoạn (Đại vận/Tiểu vận) dựa trên thông tin cá nhân của tôi. Tránh khẳng định chắc chắn; đưa checklist chuẩn bị." },
+    { id: "image", label: "Ảnh minh hoạ người hôn phối", desc: "Tạo ảnh minh hoạ phong cách Á Đông (có thể dùng chân dung và/hoặc lá số)", icon: ImagePlus, prompt: "" },
   ];
 
   const handleFile = (selected: File) => {
@@ -211,6 +257,100 @@ const EasternAstrology = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const clearPartnerInputs = () => {
+    setPartnerPortraitPreview(null);
+    setPartnerPortraitFileName("");
+    setPartnerPortraitFile(null);
+    if (partnerPortraitInputRef.current) partnerPortraitInputRef.current.value = "";
+
+    setPartnerChartPreview(null);
+    setPartnerChartFileName("");
+    setPartnerChartFile(null);
+    if (partnerChartInputRef.current) partnerChartInputRef.current.value = "";
+
+    setGeneratedImages([]);
+    setGeneratedImagenPrompt(null);
+    setGeneratedImagenPromptVi(null);
+    setGeneratedCompatibilityScore(null);
+    setGeneratedCompatibilityRationale(null);
+    setGeneratedSpousePortraitDirection(null);
+  };
+
+  const runGeneratePartnerImage = async () => {
+    if (!profile) {
+      toast.error(t("eastern.missingProfile"));
+      return;
+    }
+
+    cancelInFlight();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    setGeneratedImages([]);
+    setGeneratedImagenPrompt(null);
+    setGeneratedImagenPromptVi(null);
+    setGeneratedCompatibilityScore(null);
+    setGeneratedCompatibilityRationale(null);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const payload: Record<string, unknown> = {
+        messages: [{ role: "user", content: "Generate a symbolic partner portrait." }],
+        module: "eastern_image",
+        lang,
+        stream: false,
+        responseFormat: "json",
+        profile,
+        contextJson: {
+          optionId: "image",
+        },
+      };
+
+      const images: Record<string, unknown> = {};
+      if (partnerPortraitPreview && partnerPortraitFile) {
+        images.portrait = { data: partnerPortraitPreview.split(",")[1], mimeType: partnerPortraitFile.type };
+      }
+      if (partnerChartPreview && partnerChartFile) {
+        images.chart = { data: partnerChartPreview.split(",")[1], mimeType: partnerChartFile.type };
+      }
+      if (Object.keys(images).length > 0) payload.images = images;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate image");
+      const data = (await response.json()) as {
+        images?: Array<{ mimeType: string; data: string }>;
+        imagenPrompt?: string;
+        imagenPromptVi?: string | null;
+        compatibilityScore?: number | null;
+        compatibilityRationale?: string | null;
+        spousePortraitDirection?: string | null;
+      };
+
+      setGeneratedImages(Array.isArray(data.images) ? data.images : []);
+      setGeneratedImagenPrompt(typeof data.imagenPrompt === "string" ? data.imagenPrompt : null);
+      setGeneratedImagenPromptVi(typeof data.imagenPromptVi === "string" ? data.imagenPromptVi : null);
+      setGeneratedCompatibilityScore(typeof data.compatibilityScore === "number" ? data.compatibilityScore : null);
+      setGeneratedCompatibilityRationale(typeof data.compatibilityRationale === "string" ? data.compatibilityRationale : null);
+      setGeneratedSpousePortraitDirection(
+        typeof data.spousePortraitDirection === "string" ? data.spousePortraitDirection : null
+      );
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      console.error("Partner image generation error:", error);
+      toast.error("Không thể tạo ảnh lúc này. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
+    }
+  };
+
   const stripJsonFences = (text: string) => {
     return text
       .trim()
@@ -222,7 +362,17 @@ const EasternAstrology = () => {
 
   const parseEasternResult = (raw: string) => {
     const cleaned = stripJsonFences(raw);
-    return JSON.parse(cleaned) as EasternResult;
+    const parsed = JSON.parse(cleaned) as Partial<EasternResult>;
+    const sections = Array.isArray(parsed.sections)
+      ? parsed.sections
+      : Array.isArray(parsed.detailSections)
+        ? parsed.detailSections
+        : [];
+
+    return {
+      ...parsed,
+      sections,
+    } as EasternResult;
   };
 
   useEffect(() => {
@@ -284,9 +434,29 @@ const EasternAstrology = () => {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      const resolveEasternModule = (opt: string) => {
+        switch (opt) {
+          case "overview":
+            return "eastern_overview";
+          case "career":
+            return "eastern_career";
+          case "finance":
+            return "eastern_finance";
+          case "marriage":
+            return "eastern_marriage";
+          case "health":
+            return "eastern_health";
+          case "fortune":
+            return "eastern_fortune";
+          default:
+            return "eastern";
+        }
+      };
+
       const payload: Record<string, unknown> = {
         messages: [{ role: "user", content: prompt }],
-        module: isUpload ? "eastern_upload" : "eastern",
+        module: isUpload ? "eastern_upload" : resolveEasternModule(resolvedOptionId),
         lang,
         stream: shouldStream,
         profile,
@@ -298,7 +468,7 @@ const EasternAstrology = () => {
           mimeType: uploadFile!.type,
         };
       }
-      const response = await fetch(`${supabaseUrl}/functions/v1/gemini-chat`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
@@ -464,7 +634,10 @@ const EasternAstrology = () => {
       return;
     }
     if (option.id === "image") {
-      toast.info("Tính năng tạo ảnh đang được phát triển. Sắp ra mắt!");
+      setSelectedOption(option.id);
+      setResult(null);
+      setExtraQuestion("");
+      clearPartnerInputs();
       return;
     }
     setSelectedOption(option.id);
@@ -584,70 +757,164 @@ const EasternAstrology = () => {
 
                 <p className="mt-4 text-center text-xs text-muted-foreground">Ảnh sẽ được phân tích và luận giải chi tiết.</p>
               </Card>
-            ) : null}
-
-            {loading && !result && (
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-semibold text-foreground">{t("eastern.analyzing")}</p>
-                  <span className="flex gap-1">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" />
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.2s" }} />
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-muted-foreground" style={{ animationDelay: "0.4s" }} />
-                  </span>
-                </div>
-                {streamingText && (
-                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground whitespace-pre-line line-clamp-6">
-                    {streamingText}
+            ) : selectedOption === "image" ? (
+              <Card className="p-5 shadow-sm space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Tuỳ chọn đầu vào</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Bạn có thể tải lên chân dung, lá số, cả hai, hoặc không tải lên gì (hệ thống sẽ tạo ảnh dựa trên thông tin hồ sơ).
                   </p>
-                )}
-              </div>
-            )}
+                </div>
 
-            {result && (
-              <div className="space-y-4 animate-fade-in">
-                {selectedOption === "upload" ? (
-                  <EasternUploadResult
-                    t={t}
-                    result={result}
-                    highlightId={highlightId}
-                    setOpenPalaceId={setOpenPalaceId}
-                    focusSection={focusSection}
-                    scrollToId={scrollToId}
-                    renderMarkdown={renderMarkdown}
-                    splitParagraphs={splitParagraphs}
-                    slugify={slugify}
-                    isPalaceSectionTitle={isPalaceSectionTitle}
-                    qaOpen={qaOpen}
-                    setQaOpen={setQaOpen}
-                    qaSessionKey={qaSessionKey}
-                    lastReadingId={lastReadingId}
-                    profile={profile}
-                    selectedOption={selectedOption}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Chân dung (tuỳ chọn)</p>
+                    <input
+                      ref={partnerPortraitInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handlePartnerPortraitFile(e.target.files[0])}
+                    />
+                    <div
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
+                      onClick={() => partnerPortraitInputRef.current?.click()}
+                    >
+                      {partnerPortraitPreview ? (
+                        <div className="relative">
+                          <img src={partnerPortraitPreview} alt="Portrait preview" className="max-h-48 rounded-lg" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPartnerPortraitPreview(null);
+                              setPartnerPortraitFileName("");
+                              setPartnerPortraitFile(null);
+                              if (partnerPortraitInputRef.current) partnerPortraitInputRef.current.value = "";
+                            }}
+                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : partnerPortraitFileName ? (
+                        <div className="flex items-center gap-2">
+                          <FileImage className="h-6 w-6 text-primary" />
+                          <span className="text-xs font-medium text-foreground">{partnerPortraitFileName}</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <ImagePlus className="mx-auto h-6 w-6 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Nhấn để tải ảnh chân dung</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Lá số Tử Vi (tuỳ chọn)</p>
+                    <input
+                      ref={partnerChartInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handlePartnerChartFile(e.target.files[0])}
+                    />
+                    <div
+                      className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
+                      onClick={() => partnerChartInputRef.current?.click()}
+                    >
+                      {partnerChartPreview ? (
+                        <div className="relative">
+                          <img src={partnerChartPreview} alt="Chart preview" className="max-h-48 rounded-lg" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPartnerChartPreview(null);
+                              setPartnerChartFileName("");
+                              setPartnerChartFile(null);
+                              if (partnerChartInputRef.current) partnerChartInputRef.current.value = "";
+                            }}
+                            className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : partnerChartFileName ? (
+                        <div className="flex items-center gap-2">
+                          <FileImage className="h-6 w-6 text-primary" />
+                          <span className="text-xs font-medium text-foreground">{partnerChartFileName}</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Nhấn để tải ảnh lá số</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Button onClick={() => void runGeneratePartnerImage()} disabled={loading} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    {loading ? "Đang tạo..." : "Tạo ảnh"}
+                  </Button>
+                  <Button variant="outline" onClick={clearPartnerInputs} disabled={loading}>
+                    Xoá đầu vào
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-5 shadow-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Input
+                    value={extraQuestion}
+                    onChange={(e) => setExtraQuestion(e.target.value)}
+                    placeholder={t("module.eastern.extraQuestionPlaceholder")}
+                    className="w-full"
                   />
-                ) : selectedOption === "image" ? (
-                  <EasternImageResult />
-                ) : (
-                  <EasternAnalysisResult
-                    t={t}
-                    result={result}
-                    highlightId={highlightId}
-                    setOpenPalaceId={setOpenPalaceId}
-                    focusSection={focusSection}
-                    scrollToId={scrollToId}
-                    renderMarkdown={renderMarkdown}
-                    splitParagraphs={splitParagraphs}
-                    slugify={slugify}
-                    isPalaceSectionTitle={isPalaceSectionTitle}
-                    qaOpen={qaOpen}
-                    setQaOpen={setQaOpen}
-                    qaSessionKey={qaSessionKey}
-                    lastReadingId={lastReadingId}
-                    profile={profile}
-                    selectedOption={selectedOption}
-                  />
+                  <Button
+                    size="lg"
+                    className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+                    onClick={() => void runAnalyze()}
+                    disabled={loading}
+                  >
+                    Bắt đầu luận giải
+                  </Button>
+                </div>
+                {result && (
+                  <div className="mt-6">
+                    <EasternAnalysisResult
+                      t={t}
+                      result={result}
+                      highlightId={highlightId}
+                      setOpenPalaceId={setOpenPalaceId}
+                      focusSection={focusSection}
+                      scrollToId={scrollToId}
+                      renderMarkdown={renderMarkdown}
+                      splitParagraphs={splitParagraphs}
+                      slugify={slugify}
+                      isPalaceSectionTitle={isPalaceSectionTitle}
+                      qaOpen={qaOpen}
+                      setQaOpen={setQaOpen}
+                      qaSessionKey={qaSessionKey}
+                      lastReadingId={lastReadingId}
+                      profile={profile}
+                      selectedOption={selectedOption}
+                    />
+                  </div>
                 )}
-              </div>
+              </Card>
+            )}
+            {selectedOption === "image" && generatedImages.length > 0 && (
+              <EasternImageResult
+                images={generatedImages}
+                imagenPrompt={generatedImagenPrompt}
+                imagenPromptVi={generatedImagenPromptVi}
+                compatibilityScore={generatedCompatibilityScore}
+                compatibilityRationale={generatedCompatibilityRationale}
+                spousePortraitDirection={generatedSpousePortraitDirection}
+              />
             )}
           </div>
         )}
