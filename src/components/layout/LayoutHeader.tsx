@@ -275,6 +275,11 @@ export default function LayoutHeader() {
                       </AvatarFallback>
                     </Avatar>
                   </div>
+                  <Link to="/profile" onClick={() => setMobileOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                      {t("nav.profile")}
+                    </Button>
+                  </Link>
                   <Link to="/history" onClick={() => setMobileOpen(false)}>
                     <Button variant="ghost" size="sm" className="w-full justify-start">
                       {t("nav.history")}

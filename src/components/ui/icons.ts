@@ -3,6 +3,32 @@ import * as React from "react";
 import { AnimateIcon } from "@/components/animate-ui/icons/icon";
 
 import {
+  BarChart3 as BarChart3Icon,
+  BookOpen as BookOpenIcon,
+  Brain as BrainIcon,
+  Briefcase as BriefcaseIcon,
+  Calendar as CalendarIcon,
+  Circle as CircleIcon,
+  Dot as DotIcon,
+  FileImage as FileImageIcon,
+  Globe as GlobeIcon,
+  GripVertical as GripVerticalIcon,
+  Hash as HashIcon,
+  Image as ImageIcon,
+  ImagePlus as ImagePlusIcon,
+  Info as InfoIcon,
+  Loader2 as Loader2Icon,
+  LogOut as LogOutIcon,
+  Menu as MenuIcon,
+  Mic as MicIcon,
+  MoreHorizontal as MoreHorizontalIcon,
+  Send as SendIcon,
+  Shield as ShieldIcon,
+  Square as SquareIcon,
+  Wallet as WalletIcon,
+} from "lucide-react";
+
+import {
   Activity as ActivityIcon,
   ArrowLeft as ArrowLeftIcon,
   ArrowRight as ArrowRightIcon,
@@ -176,30 +202,6 @@ export {
   X,
 };
 
-import {
-  BarChart3 as BarChart3Icon,
-  BookOpen as BookOpenIcon,
-  Brain as BrainIcon,
-  Briefcase as BriefcaseIcon,
-  Calendar as CalendarIcon,
-  Circle as CircleIcon,
-  Dot as DotIcon,
-  FileImage as FileImageIcon,
-  Globe as GlobeIcon,
-  GripVertical as GripVerticalIcon,
-  Hash as HashIcon,
-  Image as ImageIcon,
-  ImagePlus as ImagePlusIcon,
-  Info as InfoIcon,
-  Loader2 as Loader2Icon,
-  LogOut as LogOutIcon,
-  Menu as MenuIcon,
-  MoreHorizontal as MoreHorizontalIcon,
-  Send as SendIcon,
-  Shield as ShieldIcon,
-  Wallet as WalletIcon,
-} from "lucide-react";
-
 const BarChart3 = withDefaultLucideIconAnimation(BarChart3Icon);
 const BookOpen = withDefaultLucideIconAnimation(BookOpenIcon);
 const Brain = withDefaultLucideIconAnimation(BrainIcon);
@@ -217,7 +219,9 @@ const Info = withDefaultLucideIconAnimation(InfoIcon);
 const Loader2 = withDefaultLucideIconAnimation(Loader2Icon);
 const LogOut = withDefaultLucideIconAnimation(LogOutIcon);
 const Menu = withDefaultLucideIconAnimation(MenuIcon);
+const Mic = withDefaultLucideIconAnimation(MicIcon);
 const MoreHorizontal = withDefaultLucideIconAnimation(MoreHorizontalIcon);
+const Square = withDefaultLucideIconAnimation(SquareIcon);
 const Send = withDefaultLucideIconAnimation(SendIcon);
 const Shield = withDefaultLucideIconAnimation(ShieldIcon);
 const Wallet = withDefaultLucideIconAnimation(WalletIcon);
@@ -240,7 +244,9 @@ export {
   Loader2,
   LogOut,
   Menu,
+  Mic,
   MoreHorizontal,
+  Square,
   Send,
   Shield,
   Wallet,

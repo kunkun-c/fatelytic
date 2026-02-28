@@ -52,7 +52,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
         setGender(parsed.gender ?? "");
         setPlaceOfBirth(parsed.placeOfBirth ?? "");
         setDay(storedDay);
-        setMonth(storedMonth);
+        setMonth(storedMonth.replace(/^0/, ""));
         setYear(storedYear);
         if (parsed.timeOfBirth) {
           const [hour, minute] = parsed.timeOfBirth.split(":");
@@ -91,7 +91,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
           setGender(nextProfile.gender ?? "");
           setPlaceOfBirth(nextProfile.placeOfBirth ?? "");
           setDay(storedDay);
-          setMonth(storedMonth);
+          setMonth(storedMonth.replace(/^0/, ""));
           setYear(storedYear);
           if (nextProfile.timeOfBirth) {
             const [hour, minute] = nextProfile.timeOfBirth.split(":");
@@ -266,7 +266,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center py-10">
+    <div className="mx-auto">
       <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8">
         <Reveal from="up" offset={18}>
           <div className="mb-6 text-center">

@@ -1,23 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, ImagePlus, FileImage, X, ChevronDown, MessageCircle, ArrowLeft, Clock } from "@/components/ui/icons";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, ImagePlus, Clock } from "@/components/ui/icons";
 import ReactMarkdown from "react-markdown";
-import ChatPanel from "@/components/ChatPanel";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useI18n } from "@/lib/i18n";
-import EasternUploadResult from "@/components/eastern/EasternUploadResult";
-import EasternAnalysisResult from "@/components/eastern/EasternAnalysisResult";
 import EasternImageResult from "@/components/eastern/EasternImageResult";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
-import { ImageZoom } from "@/components/animate-ui/primitives/effects/image-zoom";
+import EasternTopBar from "@/components/eastern/EasternTopBar";
+import EasternUploadBlock from "@/components/eastern/EasternUploadBlock";
+import EasternImageBlock from "@/components/eastern/EasternImageBlock";
+import EasternProfileReadingBlock from "@/components/eastern/EasternProfileReadingBlock";
 import { getStoredProfile } from "@/lib/profile";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 interface SectionItem {
   title: string;
@@ -68,528 +65,6 @@ interface OptionItem {
   descKey: string;
   promptKey?: string;
 }
-
-type EasternTopBarProps = {
-  t: (key: string) => string;
-  selectedOption: string | null;
-  options: OptionItem[];
-  setSelectedOption: (value: string | null) => void;
-  setResult: (value: EasternResult | null) => void;
-};
-
-const EasternTopBar = ({ t, selectedOption, options, setSelectedOption, setResult }: EasternTopBarProps) => {
-  return (
-    <Reveal from="up" offset={18}>
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => { setSelectedOption(null); setResult(null); }}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Link to="/history">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Clock className="h-4 w-4" animate={true} />
-              <span className="hidden sm:inline">{t("eastern.history")}</span>
-            </Button>
-          </Link>
-
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-            {(() => {
-              const selectedOptionData = options.find((o) => o.id === selectedOption);
-              const SelectedIcon = selectedOptionData?.icon;
-              return (
-                <>
-                  <div
-                    className={`h-4 w-4 shrink-0 items-center justify-center rounded-lg ${
-                      selectedOptionData?.id === "image" ? "bg-gold/15" : "bg-primary/10"
-                    } flex`}
-                  >
-                    {SelectedIcon && (
-                      <SelectedIcon
-                        className={`h-3 w-3 ${selectedOptionData?.id === "image" ? "text-gold" : "text-primary"}`}
-                      />
-                    )}
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{selectedOptionData ? t(selectedOptionData.labelKey) : ""}</p>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-    </Reveal>
-  );
-};
-
-type EasternUploadBlockProps = {
-  t: (key: string) => string;
-  loading: boolean;
-  result: EasternResult | null;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  uploadPreview: string | null;
-  uploadFileName: string;
-  uploadFile: File | null;
-  handleFile: (selected: File) => void;
-  clearUpload: () => void;
-  runAnalyze: () => void;
-  highlightId: string | null;
-  setOpenPalaceId: (id: string | null) => void;
-  focusSection: (id: string) => void;
-  scrollToId: (id: string) => void;
-  renderMarkdown: (text: string) => React.ReactNode;
-  splitParagraphs: (text: string) => string[];
-  slugify: (value: string) => string;
-  isPalaceSectionTitle: (title: string) => boolean;
-  qaOpen: boolean;
-  setQaOpen: (open: boolean) => void;
-  qaSessionKey: string | null;
-  lastReadingId: string | null;
-  profile: unknown;
-  selectedOption: string | null;
-};
-
-const EasternUploadBlock = ({
-  t,
-  loading,
-  result,
-  fileInputRef,
-  uploadPreview,
-  uploadFileName,
-  uploadFile,
-  handleFile,
-  clearUpload,
-  runAnalyze,
-  highlightId,
-  setOpenPalaceId,
-  focusSection,
-  scrollToId,
-  renderMarkdown,
-  splitParagraphs,
-  slugify,
-  isPalaceSectionTitle,
-  qaOpen,
-  setQaOpen,
-  qaSessionKey,
-  lastReadingId,
-  profile,
-  selectedOption,
-}: EasternUploadBlockProps) => {
-  return (
-    <>
-      <Reveal from="up" offset={18} delay={0.05}>
-        <Card className="p-5 shadow-sm">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/jpg"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-          />
-          <div
-            className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10 relative overflow-hidden"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {/* Animation overlay khi đang phân tích */}
-            {uploadPreview && loading && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-cyan-500/50 opacity-80 animate-pulse">
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/30 to-transparent animate-pulse" />
-                {/* Scanning lines */}
-                <div className="absolute inset-0">
-                  <div className="h-full w-full bg-gradient-to-b from-transparent via-blue-500/70 to-transparent animate-pulse" 
-                       style={{ animation: 'scan 2s linear infinite' }} />
-                  <div className="h-full w-full bg-gradient-to-r from-transparent via-purple-500/60 to-transparent animate-pulse" 
-                       style={{ animation: 'scan 3s linear infinite reverse' }} />
-                </div>
-                {/* Grid overlay */}
-                <div className="absolute inset-0 bg-grid-pattern opacity-30" 
-                     style={{ 
-                       backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.5) 1px, transparent 1px)',
-                       backgroundSize: '20px 20px',
-                       animation: 'grid-fade 4s ease-in-out infinite'
-                     }} />
-              </div>
-            )}
-            
-            {uploadPreview ? (
-              <div className="relative z-10">
-                <ImageZoom
-                  zoomScale={2.5}
-                  zoomOnHover={true}
-                  zoomOnClick={false}
-                  className="max-h-64"
-                >
-                  <img src={uploadPreview} alt="Chart preview" className={`max-h-64 rounded-lg shadow-lg ${loading ? 'opacity-70' : 'opacity-100'}`} />
-                </ImageZoom>
-                {/* Analysis indicators - chỉ khi đang phân tích */}
-                {loading && (
-                  <>
-                    <div className="absolute -top-2 -left-2 flex gap-1">
-                      <div className="h-3 w-3 bg-blue-500 rounded-full animate-ping shadow-lg shadow-blue-500/50" />
-                      <div className="h-3 w-3 bg-purple-500 rounded-full animate-ping shadow-lg shadow-purple-500/50" style={{ animationDelay: '0.5s' }} />
-                      <div className="h-3 w-3 bg-cyan-500 rounded-full animate-ping shadow-lg shadow-cyan-500/50" style={{ animationDelay: '1s' }} />
-                    </div>
-                    <div className="absolute -bottom-2 -right-2 flex gap-1">
-                      <div className="h-3 w-3 bg-green-500 rounded-full animate-ping shadow-lg shadow-green-500/50" style={{ animationDelay: '1.5s' }} />
-                      <div className="h-3 w-3 bg-yellow-500 rounded-full animate-ping shadow-lg shadow-yellow-500/50" style={{ animationDelay: '2s' }} />
-                    </div>
-                  </>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearUpload();
-                  }}
-                  className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20 backdrop-blur-sm"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : uploadFileName ? (
-              <div className="flex items-center gap-2 z-10">
-                <div className="relative">
-                  <FileImage className="h-8 w-8 text-primary" />
-                  <div className="absolute -inset-1 bg-primary/20 rounded-full animate-ping" />
-                </div>
-                <span className="text-sm font-medium text-foreground">{uploadFileName}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearUpload();
-                  }}
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-            ) : (
-              <div className="z-10">
-                <div className="relative mb-3 flex justify-center">
-                  <Upload className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-semibold text-foreground">{t("eastern.upload.chooseChart")}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.formats")}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Custom styles cho animations */}
-          <style dangerouslySetInnerHTML={{
-            __html: `
-              @keyframes scan {
-                0% { transform: translateY(-100%); }
-                100% { transform: translateY(100%); }
-              }
-              @keyframes grid-fade {
-                0%, 100% { opacity: 0.1; }
-                50% { opacity: 0.3; }
-              }
-            `
-          }} />
-
-          <Button
-            size="lg"
-            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
-            onClick={runAnalyze}
-            disabled={loading || !uploadFile}
-          >
-            {t("eastern.upload.start")}
-          </Button>
-
-          {loading && (
-            <div className="mt-4 rounded-xl border border-border bg-background p-4">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
-                <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.slowNote")}</p>
-            </div>
-          )}
-
-          <p className="mt-4 text-center text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
-        </Card>
-      </Reveal>
-
-      {result && (
-        <Reveal className="mt-6" from="up" offset={18} delay={0.08}>
-          <EasternUploadResult
-            t={t}
-            result={result}
-            highlightId={highlightId}
-            setOpenPalaceId={setOpenPalaceId}
-            focusSection={focusSection}
-            scrollToId={scrollToId}
-            renderMarkdown={renderMarkdown}
-            splitParagraphs={splitParagraphs}
-            slugify={slugify}
-            isPalaceSectionTitle={isPalaceSectionTitle}
-            qaOpen={qaOpen}
-            setQaOpen={setQaOpen}
-            qaSessionKey={qaSessionKey}
-            lastReadingId={lastReadingId}
-            profile={profile}
-            selectedOption={selectedOption}
-          />
-        </Reveal>
-      )}
-    </>
-  );
-};
-
-type EasternImageBlockProps = {
-  t: (key: string) => string;
-  loading: boolean;
-  partnerPortraitPreview: string | null;
-  partnerPortraitFileName: string;
-  partnerPortraitInputRef: React.RefObject<HTMLInputElement>;
-  handlePartnerPortraitFile: (selected: File) => void;
-  partnerChartPreview: string | null;
-  partnerChartFileName: string;
-  partnerChartInputRef: React.RefObject<HTMLInputElement>;
-  handlePartnerChartFile: (selected: File) => void;
-  clearPartnerInputs: () => void;
-  runGeneratePartnerImage: () => Promise<void>;
-  setPartnerPortraitPreview: (value: string | null) => void;
-  setPartnerPortraitFileName: (value: string) => void;
-  setPartnerPortraitFile: (value: File | null) => void;
-  setPartnerChartPreview: (value: string | null) => void;
-  setPartnerChartFileName: (value: string) => void;
-  setPartnerChartFile: (value: File | null) => void;
-};
-
-const EasternImageBlock = ({
-  t,
-  loading,
-  partnerPortraitPreview,
-  partnerPortraitFileName,
-  partnerPortraitInputRef,
-  handlePartnerPortraitFile,
-  partnerChartPreview,
-  partnerChartFileName,
-  partnerChartInputRef,
-  handlePartnerChartFile,
-  clearPartnerInputs,
-  runGeneratePartnerImage,
-  setPartnerPortraitPreview,
-  setPartnerPortraitFileName,
-  setPartnerPortraitFile,
-  setPartnerChartPreview,
-  setPartnerChartFileName,
-  setPartnerChartFile,
-}: EasternImageBlockProps) => {
-  return (
-    <Reveal from="up" offset={18} delay={0.05}>
-      <Card className="p-5 shadow-sm space-y-4">
-        <div>
-          <p className="text-sm font-semibold text-foreground">{t("eastern.image.inputOptions.title")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.inputOptions.desc")}</p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.portraitOptional")}</p>
-            <input
-              ref={partnerPortraitInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handlePartnerPortraitFile(e.target.files[0])}
-            />
-            <div
-              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
-              onClick={() => partnerPortraitInputRef.current?.click()}
-            >
-              {partnerPortraitPreview ? (
-                <div className="relative">
-                  <img src={partnerPortraitPreview} alt="Portrait preview" className="max-h-48 rounded-lg" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPartnerPortraitPreview(null);
-                      setPartnerPortraitFileName("");
-                      setPartnerPortraitFile(null);
-                      if (partnerPortraitInputRef.current) partnerPortraitInputRef.current.value = "";
-                    }}
-                    className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : partnerPortraitFileName ? (
-                <div className="flex items-center gap-2">
-                  <FileImage className="h-6 w-6 text-primary" />
-                  <span className="text-xs font-medium text-foreground">{partnerPortraitFileName}</span>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <ImagePlus className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{t("eastern.image.portraitClick")}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("eastern.image.chartOptional")}</p>
-            <input
-              ref={partnerChartInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && handlePartnerChartFile(e.target.files[0])}
-            />
-            <div
-              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-5 text-center transition-colors hover:border-primary/40 cursor-pointer"
-              onClick={() => partnerChartInputRef.current?.click()}
-            >
-              {partnerChartPreview ? (
-                <div className="relative">
-                  <img src={partnerChartPreview} alt="Chart preview" className="max-h-48 rounded-lg" />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPartnerChartPreview(null);
-                      setPartnerChartFileName("");
-                      setPartnerChartFile(null);
-                      if (partnerChartInputRef.current) partnerChartInputRef.current.value = "";
-                    }}
-                    className="absolute -right-2 -top-2 rounded-full bg-foreground/10 p-1 hover:bg-foreground/20"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : partnerChartFileName ? (
-                <div className="flex items-center gap-2">
-                  <FileImage className="h-6 w-6 text-primary" />
-                  <span className="text-xs font-medium text-foreground">{partnerChartFileName}</span>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">{t("eastern.image.chartClick")}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <Button onClick={() => void runGeneratePartnerImage()} disabled={loading} className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            {loading ? t("eastern.image.generating") : t("eastern.image.generate")}
-          </Button>
-          <Button variant="outline" onClick={clearPartnerInputs} disabled={loading}>
-            {t("eastern.image.clearInputs")}
-          </Button>
-        </div>
-
-        {(loading || (partnerPortraitPreview || partnerChartPreview)) && (
-          <div className="rounded-xl border border-border bg-background p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
-              <p className="text-sm font-medium text-foreground">{t("eastern.image.slowTitle")}</p>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.image.slowDesc")}</p>
-          </div>
-        )}
-      </Card>
-    </Reveal>
-  );
-};
-
-type EasternProfileReadingBlockProps = {
-  t: (key: string) => string;
-  loading: boolean;
-  runAnalyze: () => Promise<void>;
-  result: EasternResult | null;
-  highlightId: string | null;
-  setOpenPalaceId: (id: string | null) => void;
-  focusSection: (id: string) => void;
-  scrollToId: (id: string) => void;
-  renderMarkdown: (text: string) => React.ReactNode;
-  splitParagraphs: (text: string) => string[];
-  slugify: (value: string) => string;
-  isPalaceSectionTitle: (title: string) => boolean;
-  qaOpen: boolean;
-  setQaOpen: (open: boolean) => void;
-  qaSessionKey: string | null;
-  lastReadingId: string | null;
-  profile: unknown;
-  selectedOption: string | null;
-};
-
-const EasternProfileReadingBlock = ({
-  t,
-  loading,
-  runAnalyze,
-  result,
-  highlightId,
-  setOpenPalaceId,
-  focusSection,
-  scrollToId,
-  renderMarkdown,
-  splitParagraphs,
-  slugify,
-  isPalaceSectionTitle,
-  qaOpen,
-  setQaOpen,
-  qaSessionKey,
-  lastReadingId,
-  profile,
-  selectedOption,
-}: EasternProfileReadingBlockProps) => {
-  return (
-    <Reveal from="up" offset={18} delay={0.05}>
-      <Card className="p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">{t("eastern.profileReading.title")}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.profileReading.desc")}</p>
-          </div>
-          <Button
-            size="lg"
-            className="w-full bg-gradient-primary hover:opacity-90 transition-opacity sm:w-auto"
-            onClick={() => void runAnalyze()}
-            disabled={loading}
-          >
-            {loading ? t("eastern.profileReading.analyzing") : t("eastern.profileReading.start")}
-          </Button>
-        </div>
-
-        {loading && (
-          <div className="mt-4 rounded-xl border border-border bg-background p-4">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-primary" animate animateOnHover={false} animation="default" loop />
-              <p className="text-sm font-medium text-foreground">{t("eastern.loading.title")}</p>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{t("eastern.loading.desc")}</p>
-          </div>
-        )}
-
-        {result && (
-          <Reveal className="mt-6" from="up" offset={18} delay={0.05}>
-            <EasternAnalysisResult
-              t={t}
-              result={result}
-              highlightId={highlightId}
-              setOpenPalaceId={setOpenPalaceId}
-              focusSection={focusSection}
-              scrollToId={scrollToId}
-              renderMarkdown={renderMarkdown}
-              splitParagraphs={splitParagraphs}
-              slugify={slugify}
-              isPalaceSectionTitle={isPalaceSectionTitle}
-              qaOpen={qaOpen}
-              setQaOpen={setQaOpen}
-              qaSessionKey={qaSessionKey}
-              lastReadingId={lastReadingId}
-              profile={profile}
-              selectedOption={selectedOption}
-            />
-          </Reveal>
-        )}
-      </Card>
-    </Reveal>
-  );
-};
-
 const EasternAstrology = () => {
   const { t, lang } = useI18n();
 
@@ -611,6 +86,7 @@ const EasternAstrology = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<EasternResult | null>(null);
+  const [resultsByOptionId, setResultsByOptionId] = useState<Record<string, EasternResult>>({});
   const [streamingText, setStreamingText] = useState("");
   const abortRef = useRef<AbortController | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
@@ -901,15 +377,62 @@ const EasternAstrology = () => {
         compatibilityScore?: number | null;
         compatibilityRationale?: string | null;
         spousePortraitDirection?: string | null;
+        response?: unknown;
       };
 
-      setGeneratedImages(Array.isArray(data.images) ? data.images : []);
-      setGeneratedImagenPrompt(typeof data.imagenPrompt === "string" ? data.imagenPrompt : null);
-      setGeneratedImagenPromptVi(typeof data.imagenPromptVi === "string" ? data.imagenPromptVi : null);
-      setGeneratedCompatibilityScore(typeof data.compatibilityScore === "number" ? data.compatibilityScore : null);
-      setGeneratedCompatibilityRationale(typeof data.compatibilityRationale === "string" ? data.compatibilityRationale : null);
+      const unwrapResponsePayload = (value: unknown) => {
+        if (!value) return null;
+        if (typeof value === "object") return value as Record<string, unknown>;
+        if (typeof value === "string") {
+          try {
+            return JSON.parse(stripJsonFences(value)) as Record<string, unknown>;
+          } catch {
+            return null;
+          }
+        }
+        return null;
+      };
+
+      const unwrapped = unwrapResponsePayload(data.response);
+      const imagesRaw =
+        (Array.isArray(data.images) && data.images) ||
+        (Array.isArray((unwrapped as { images?: unknown })?.images) ? ((unwrapped as { images?: unknown })?.images as Array<{ mimeType: string; data: string }>) : null);
+
+      setGeneratedImages(Array.isArray(imagesRaw) ? imagesRaw : []);
+      setGeneratedImagenPrompt(
+        typeof data.imagenPrompt === "string"
+          ? data.imagenPrompt
+          : typeof (unwrapped as { imagenPrompt?: unknown })?.imagenPrompt === "string"
+            ? ((unwrapped as { imagenPrompt?: unknown })?.imagenPrompt as string)
+            : null
+      );
+      setGeneratedImagenPromptVi(
+        typeof data.imagenPromptVi === "string"
+          ? data.imagenPromptVi
+          : typeof (unwrapped as { imagenPromptVi?: unknown })?.imagenPromptVi === "string"
+            ? ((unwrapped as { imagenPromptVi?: unknown })?.imagenPromptVi as string)
+            : null
+      );
+      setGeneratedCompatibilityScore(
+        typeof data.compatibilityScore === "number"
+          ? data.compatibilityScore
+          : typeof (unwrapped as { compatibilityScore?: unknown })?.compatibilityScore === "number"
+            ? ((unwrapped as { compatibilityScore?: unknown })?.compatibilityScore as number)
+            : null
+      );
+      setGeneratedCompatibilityRationale(
+        typeof data.compatibilityRationale === "string"
+          ? data.compatibilityRationale
+          : typeof (unwrapped as { compatibilityRationale?: unknown })?.compatibilityRationale === "string"
+            ? ((unwrapped as { compatibilityRationale?: unknown })?.compatibilityRationale as string)
+            : null
+      );
       setGeneratedSpousePortraitDirection(
-        typeof data.spousePortraitDirection === "string" ? data.spousePortraitDirection : null
+        typeof data.spousePortraitDirection === "string"
+          ? data.spousePortraitDirection
+          : typeof (unwrapped as { spousePortraitDirection?: unknown })?.spousePortraitDirection === "string"
+            ? ((unwrapped as { spousePortraitDirection?: unknown })?.spousePortraitDirection as string)
+            : null
       );
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
@@ -963,12 +486,25 @@ const EasternAstrology = () => {
 
     setSelectedOption(optionId);
     setUploadFileName(fileName);
-    setResult(reading.result_json as unknown as EasternResult);
+    const parsed = reading.result_json as unknown as EasternResult;
+    setResult(parsed);
+    setResultsByOptionId((prev) => ({ ...prev, [optionId]: parsed }));
     setLastReadingId(reading.id);
     setQaSessionKey(String(Date.now()));
     setStreamingText("");
     setLoading(false);
   }, [location.state]);
+
+  const qaContextJson = useMemo(() => {
+    return {
+      readingId: lastReadingId,
+      optionId: selectedOption,
+      profile,
+      resultsByOptionId,
+      currentResult: result,
+      uploadResult: resultsByOptionId.upload ?? null,
+    };
+  }, [lastReadingId, profile, result, resultsByOptionId, selectedOption]);
 
   const cancelInFlight = () => {
     abortRef.current?.abort();
@@ -1060,6 +596,7 @@ const EasternAstrology = () => {
           return;
         }
         setResult(parsed);
+        setResultsByOptionId((prev) => ({ ...prev, [resolvedOptionId]: parsed }));
 
         setQaSessionKey(String(Date.now()));
 
@@ -1129,6 +666,7 @@ const EasternAstrology = () => {
           if (payload === "[DONE]") {
             const parsed = parseEasternResult(accumulated);
             setResult(parsed);
+            setResultsByOptionId((prev) => ({ ...prev, [resolvedOptionId]: parsed }));
 
             setQaSessionKey(String(Date.now()));
 
@@ -1279,6 +817,7 @@ const EasternAstrology = () => {
                 lastReadingId={lastReadingId}
                 profile={profile}
                 selectedOption={selectedOption}
+                qaContextJson={qaContextJson}
               />
             )}
 
@@ -1294,7 +833,6 @@ const EasternAstrology = () => {
                 partnerChartFileName={partnerChartFileName}
                 partnerChartInputRef={partnerChartInputRef}
                 handlePartnerChartFile={handlePartnerChartFile}
-                clearPartnerInputs={clearPartnerInputs}
                 runGeneratePartnerImage={runGeneratePartnerImage}
                 setPartnerPortraitPreview={setPartnerPortraitPreview}
                 setPartnerPortraitFileName={setPartnerPortraitFileName}
@@ -1325,6 +863,7 @@ const EasternAstrology = () => {
                 lastReadingId={lastReadingId}
                 profile={profile}
                 selectedOption={selectedOption}
+                qaContextJson={qaContextJson}
               />
             )}
 

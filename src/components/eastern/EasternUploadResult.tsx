@@ -49,6 +49,7 @@ type Props = {
   lastReadingId: string | null;
   profile: unknown;
   selectedOption: string | null;
+  qaContextJson?: unknown;
 };
 
 export default function EasternUploadResult({
@@ -68,7 +69,29 @@ export default function EasternUploadResult({
   lastReadingId,
   profile,
   selectedOption,
+  qaContextJson,
 }: Props) {
+  const resolvedQaModuleKey = (() => {
+    switch (selectedOption) {
+      case "upload":
+        return "eastern_upload" as const;
+      case "overview":
+        return "eastern_overview" as const;
+      case "career":
+        return "eastern_career" as const;
+      case "finance":
+        return "eastern_finance" as const;
+      case "marriage":
+        return "eastern_marriage" as const;
+      case "health":
+        return "eastern_health" as const;
+      case "fortune":
+        return "eastern_fortune" as const;
+      default:
+        return "eastern" as const;
+    }
+  })();
+
   const getItemTypeStyles = (type?: string) => {
     switch (type) {
       case "challenge":
@@ -213,14 +236,16 @@ export default function EasternUploadResult({
 
             <div className="mt-4" style={{ height: "calc(100dvh - 10rem)" }}>
               <ChatPanel
-                moduleKey="eastern"
+                moduleKey={resolvedQaModuleKey}
                 storageKeySuffix={qaSessionKey ?? lastReadingId ?? "latest"}
-                contextJson={{
-                  readingId: lastReadingId,
-                  optionId: selectedOption,
-                  profile,
-                  result,
-                }}
+                contextJson={
+                  qaContextJson ?? {
+                    readingId: lastReadingId,
+                    optionId: selectedOption,
+                    profile,
+                    result,
+                  }
+                }
                 className="flex h-full flex-col"
                 heightClassName="flex-1"
                 showQuickActions

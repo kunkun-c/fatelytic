@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send } from "@/components/ui/icons";
+import { Mic, Send, Square } from "@/components/ui/icons";
 import { useI18n } from "@/lib/i18n";
 import { APP_STORAGE_PREFIX } from "@/lib/brand";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ type ChatPanelProps = {
   moduleKey:
     | "numerology"
     | "eastern"
+    | "eastern_upload"
     | "eastern_overview"
     | "eastern_career"
     | "eastern_finance"
@@ -47,7 +48,17 @@ const defaultQuickActions: Array<{ label: string; prompt: string }> = [
 ];
 
 const quickActionsByModule: Record<
-  Exclude<ChatPanelProps["moduleKey"], "eastern" | "eastern_overview" | "eastern_career" | "eastern_finance" | "eastern_marriage" | "eastern_health" | "eastern_fortune">,
+  Exclude<
+    ChatPanelProps["moduleKey"],
+    | "eastern"
+    | "eastern_upload"
+    | "eastern_overview"
+    | "eastern_career"
+    | "eastern_finance"
+    | "eastern_marriage"
+    | "eastern_health"
+    | "eastern_fortune"
+  >,
   Array<{ label: string; prompt: string }>
 > = {
   numerology: [
@@ -183,8 +194,13 @@ const ChatPanel = ({
   const [messages, setMessages] = useState<ChatPanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const assistantIndexRef = useRef<number | null>(null);
+
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordChunksRef = useRef<BlobPart[]>([]);
 
   const hydratedRef = useRef(false);
   const initKeyRef = useRef<string | null>(null);
@@ -450,6 +466,95 @@ const ChatPanel = ({
     [appendAssistantText, contextJson, input, lang, messages, moduleKey, profile, scheduleAssistantPersist, sessionId, t, typing, user?.id]
   );
 
+  const transcribeAndSend = useCallback(async () => {
+    if (typing || transcribing) return;
+    if (!user?.id) {
+      toast.error(t("chat.error"));
+      return;
+    }
+
+    try {
+      setTranscribing(true);
+      const chunks = recordChunksRef.current;
+      if (!chunks || chunks.length === 0) return;
+
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = String(reader.result ?? "");
+          const idx = res.indexOf(",");
+          resolve(idx >= 0 ? res.slice(idx + 1) : res);
+        };
+        reader.onerror = () => reject(new Error("Failed to read audio"));
+        reader.readAsDataURL(blob);
+      });
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          module: "speech_to_text",
+          lang,
+          profile,
+          contextJson,
+          audio: { data: base64, mimeType: "audio/webm" },
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) throw new Error("STT failed");
+      const data = (await response.json()) as { text?: unknown };
+      const text = typeof data.text === "string" ? data.text.trim() : "";
+      if (!text) {
+        toast.error(t("chat.error"));
+        return;
+      }
+
+      void sendMessage(text);
+    } catch (err) {
+      console.error("Voice STT error:", err);
+      toast.error(t("chat.error"));
+    } finally {
+      setTranscribing(false);
+      recordChunksRef.current = [];
+    }
+  }, [contextJson, lang, profile, sendMessage, t, transcribing, typing, user?.id]);
+
+  const startRecording = useCallback(async () => {
+    if (recording || transcribing) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      recordChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        void transcribeAndSend();
+      };
+
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch (err) {
+      console.error("Mic permission error:", err);
+      toast.error(t("chat.error"));
+    }
+  }, [recording, t, transcribeAndSend, transcribing]);
+
+  const stopRecording = useCallback(() => {
+    const recorder = recorderRef.current;
+    if (!recorder) return;
+    if (recorder.state === "inactive") return;
+    recorder.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  }, []);
+
   useEffect(() => {
     if (!initialPrompt) return;
     if (initialPromptSentRef.current === initialPrompt) return;
@@ -543,6 +648,23 @@ const ChatPanel = ({
           maxLength={500}
           className="flex-1"
         />
+        <Button
+          type="button"
+          size="icon"
+          variant="outline"
+          disabled={typing || transcribing}
+          onClick={() => {
+            if (recording) stopRecording();
+            else void startRecording();
+          }}
+          title={recording ? "Stop" : "Voice"}
+        >
+          {recording ? (
+            <Square className="h-4 w-4" animate animateOnHover={false} animation="default" loop />
+          ) : (
+            <Mic className="h-4 w-4" animate animateOnHover={false} animation="default" loop={transcribing} />
+          )}
+        </Button>
         <Button type="submit" size="icon" disabled={typing || !input.trim()}>
           <Send className="h-4 w-4" />
         </Button>

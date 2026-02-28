@@ -18,6 +18,7 @@ type Props = {
   lastReadingId: string | null;
   profile: unknown;
   selectedOption: string | null;
+  qaContextJson?: unknown;
 };
 
 export default function EasternAnalysisResult(props: Props) {

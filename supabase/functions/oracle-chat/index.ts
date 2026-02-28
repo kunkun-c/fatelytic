@@ -12,6 +12,34 @@ interface Message {
   content: string;
 }
 
+async function callGeminiText(
+  apiKey: string,
+  systemPrompt: string,
+  parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>
+): Promise<string> {
+  const url = `${GEMINI_API_URL}?key=${apiKey}`;
+  const payload = {
+    contents: [{ role: "user", parts }],
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Gemini Text API error:", res.status, err);
+    throw new Error(`Gemini API error: ${res.status}`);
+  }
+
+  const json = await res.json();
+  const outParts = json.candidates?.[0]?.content?.parts;
+  return String(readGeminiTextParts(outParts) ?? "");
+}
+
 function parseBirthYear(dateOfBirth: string | undefined) {
   if (!dateOfBirth) return null;
   const m = /^\s*(\d{4})/.exec(dateOfBirth);
@@ -139,6 +167,10 @@ interface RequestBody {
   context?: NumerologyContext;
   contextJson?: unknown;
   profile?: ProfileContext;
+  audio?: {
+    data: string;
+    mimeType: string;
+  };
   image?: {
     data: string;
     mimeType: string;
@@ -151,6 +183,7 @@ interface RequestBody {
   module?:
     | "numerology"
     | "eastern"
+    | "speech_to_text"
     | "eastern_image"
     | "eastern_overview"
     | "eastern_career"
@@ -550,7 +583,7 @@ function buildGenericContext(contextJson: unknown, lang: "en" | "vi" = "en"): st
   if (!contextJson) return "";
   try {
     const raw = JSON.stringify(contextJson);
-    const maxLen = 12000;
+    const maxLen = 60000;
     const truncated = raw.length > maxLen ? `${raw.slice(0, maxLen)}…(truncated)` : raw;
     if (lang === "vi") {
       return `\nNgữ cảnh bổ sung (JSON):\n${truncated}\n`;
@@ -589,6 +622,7 @@ serve(async (req: Request) => {
       context,
       contextJson,
       profile,
+      audio,
       image,
       images,
       lang = "en",
@@ -610,6 +644,30 @@ serve(async (req: Request) => {
       });
     }
 
+    if (module === "speech_to_text") {
+      if (!audio?.data || !audio?.mimeType) {
+        return new Response(JSON.stringify({ error: "Missing audio" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const systemPrompt =
+        lang === "vi"
+          ? "Bạn là máy chuyển giọng nói thành văn bản. Nhiệm vụ: chép lại chính xác nội dung người dùng nói. Quy tắc: chỉ trả về phần văn bản, không thêm giải thích. Nếu người dùng nói tiếng Việt thì trả tiếng Việt."
+          : "You are a speech-to-text transcriber. Task: accurately transcribe the user's speech. Rules: output only the transcript text, no extra commentary.";
+
+      const parts = [
+        { text: lang === "vi" ? "Hãy chép lại nội dung audio." : "Transcribe this audio." },
+        { inlineData: { mimeType: audio.mimeType, data: audio.data } },
+      ];
+
+      const text = (await callGeminiText(GEMINI_API_KEY, systemPrompt, parts)).trim();
+      return new Response(JSON.stringify({ text }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const normalizedModule = isModuleKey(module) ? module : "numerology";
     if (!isModuleKey(module)) {
       console.warn("Unknown module key received; falling back to numerology:", module);
@@ -620,6 +678,8 @@ serve(async (req: Request) => {
     if (resolvedModule === "eastern_image") {
       const portrait = coerceInlineImage(images?.portrait);
       const chart = coerceInlineImage(images?.chart) ?? (image ? { data: image.data, mimeType: image.mimeType } : null);
+
+      const inputMode = portrait && chart ? "BOTH_PORTRAIT_AND_CHART" : portrait ? "PORTRAIT_ONLY" : chart ? "CHART_ONLY" : "NO_IMAGES";
 
       const analysisSystemPrompt =
         lang === "vi"
@@ -636,12 +696,11 @@ serve(async (req: Request) => {
           :
               "You are a style reasoning expert and art director. Task: use the full user info (profile + context) and any image analysis results to derive a grounded partner-portrait sketch (non-fatalistic).\n\nRULES:\n- Output STRICT JSON only.\n- Do not hardcode locale/style; derive from input.\n- Do not include PII (name, full DOB, exact address).\n- Must return compatibilityScore (0-100) + short rationale.\n- Must return spousePortraitDirection: 3-6 sentences describing the portrait direction and confidence.\n\nJSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: string|null, style: string|null, overallVibe: string|null, facialFeatures: string[], hair: string|null, accessories: string[], setting: string|null, colorPalette: string|null }, compatibilityScore: number, compatibilityRationale: string, spousePortraitDirection: string }";
 
-      const profileForReasoning = buildImageAnalysisProfileContext(profile, lang);
+      const profileForReasoning = `${buildProfileContext(profile, lang)}${buildImageAnalysisProfileContext(profile, lang)}`;
       const genericContext = buildGenericContext(contextJson, lang);
-      const userContext = buildUserContext(context, lang);
 
       const analysisParts = buildImagenParts(
-        `${userContext}${genericContext}${profileForReasoning}`.trim() ||
+        `${genericContext}${profileForReasoning}`.trim() ||
           (lang === "vi" ? "Hãy phân tích ảnh theo schema JSON." : "Analyze the images per the JSON schema."),
         portrait,
         chart
@@ -652,8 +711,8 @@ serve(async (req: Request) => {
 
       const sketchInput =
         lang === "vi"
-          ? `Ngữ cảnh:\n${userContext}${genericContext}${profileForReasoning}\n\nKết quả phân tích ảnh (nếu có):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(không có ảnh)"}\n\nHãy tạo partnerSketch + compatibilityScore theo schema.`
-          : `Context:\n${userContext}${genericContext}${profileForReasoning}\n\nImage analysis (if any):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(no images)"}\n\nCreate partnerSketch + compatibility per schema.`;
+          ? `INPUT MODE: ${inputMode}\n\nNgữ cảnh đầy đủ (dùng để suy luận, không đưa PII vào prompt Imagen):\n${genericContext}${profileForReasoning}\n\nNguồn tham chiếu: Khi diễn giải sao/cung (đặc biệt cung Phu Thê), ưu tiên tra cứu theo sách "Tử Vi Đẩu Số Toàn Thư" và ghi nhận theo phong cách thận trọng (nếu không chắc, nói rõ).\n\nKết quả phân tích ảnh (nếu có):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(không có ảnh)"}\n\nYêu cầu: tạo partnerSketch + compatibilityScore theo schema. Nhấn mạnh style minh hoạ: chân dung bút chì (graphite), nền giấy cổ điển/giấy ngà có texture, ánh sáng mềm, cảm giác trang sách/giấy vẽ cổ điển (không cổ trang).`
+          : `INPUT MODE: ${inputMode}\n\nFull context (for reasoning; do not put PII into Imagen prompt):\n${genericContext}${profileForReasoning}\n\nReference: when interpreting stars/palaces (especially spouse/Phu The signals), prioritize classical Tu Vi sources (e.g. Tu Vi Dau So Toan Thu). Be cautious; if uncertain, say so.\n\nImage analysis (if any):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(no images)"}\n\nRequirement: create partnerSketch + compatibilityScore per schema. Emphasize illustration direction: graphite pencil portrait on vintage paper background with visible paper grain; soft lighting; modern subject (no historical costume).`;
 
       const sketchJson = await callGeminiJson(GEMINI_API_KEY, sketchSystemPrompt, [{ text: sketchInput }]);
       const sketchObj = sketchJson as {
@@ -691,7 +750,7 @@ serve(async (req: Request) => {
 
       const systemPrompt = getSystemPrompt(lang, resolvedModule, "json");
       const imagenProfileContext = buildImagenProfileContext(profile, lang);
-      const preface = `${userContext}${genericContext}${imagenProfileContext}`.trim();
+      const preface = `${genericContext}${imagenProfileContext}`.trim();
 
       const partnerSketchText =
         sketchObj && typeof sketchObj === "object"
@@ -700,8 +759,8 @@ serve(async (req: Request) => {
 
       const promptInputText =
         preface.length > 0
-          ? `${preface}\n\n${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`
-          : `${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`;
+          ? `${preface}\n\nINPUT MODE: ${inputMode}\n\nStyle direction (must follow): graphite pencil portrait, hand-drawn pencil strokes, monochrome/soft sepia, vintage paper background (aged ivory paper texture), subtle paper grain, clean modern Vietnamese/Southeast Asian adult look, modern wardrobe, no historical costume.\n\n${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`
+          : `INPUT MODE: ${inputMode}\n\nStyle direction (must follow): graphite pencil portrait, hand-drawn pencil strokes, monochrome/soft sepia, vintage paper background (aged ivory paper texture), subtle paper grain, clean modern Vietnamese/Southeast Asian adult look, modern wardrobe, no historical costume.\n\n${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`;
 
       const promptParts = buildImagenParts(promptInputText, portrait, chart);
 
