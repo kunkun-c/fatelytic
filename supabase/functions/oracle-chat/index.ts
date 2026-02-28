@@ -402,6 +402,7 @@ function getEasternUploadSchema(): JsonSchema {
             heading: { type: "STRING" },
             text: { type: "STRING" },
             source: { type: "STRING" },
+            type: { type: "STRING" },
           },
         },
       },
@@ -409,10 +410,22 @@ function getEasternUploadSchema(): JsonSchema {
         type: "ARRAY",
         items: {
           type: "OBJECT",
-          required: ["title", "items"],
+          required: ["title", "starAnalyses", "summary"],
           properties: {
             title: { type: "STRING" },
-            items: {
+            starAnalyses: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                required: ["text"],
+                properties: {
+                  heading: { type: "STRING" },
+                  text: { type: "STRING" },
+                  source: { type: "STRING" },
+                },
+              },
+            },
+            summary: {
               type: "ARRAY",
               items: {
                 type: "OBJECT",
@@ -420,6 +433,7 @@ function getEasternUploadSchema(): JsonSchema {
                 properties: {
                   text: { type: "STRING" },
                   source: { type: "STRING" },
+                  type: { type: "STRING" },
                 },
               },
             },

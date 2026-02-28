@@ -90,7 +90,7 @@ export default function LayoutHeader() {
         </Highlight>
 
         <div className="hidden items-center gap-2 md:flex">
-          <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
+          {/* <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/70 text-muted-foreground">
               <Globe className="h-4 w-4" />
             </div>
@@ -124,7 +124,7 @@ export default function LayoutHeader() {
                 </HighlightItem>
               ))}
             </Highlight>
-          </div>
+          </div> */}
 
           {user ? (
             <div className="relative">
@@ -218,7 +218,7 @@ export default function LayoutHeader() {
               </Link>
             ))}
             <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-              <div className="flex justify-start">
+              {/* <div className="flex justify-start">
                 <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/70 text-muted-foreground">
                     <Globe className="h-4 w-4" />
@@ -254,7 +254,7 @@ export default function LayoutHeader() {
                     ))}
                   </Highlight>
                 </div>
-              </div>
+              </div> */}
 
               {user ? (
                 <>

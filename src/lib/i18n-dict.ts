@@ -48,20 +48,62 @@ export const translations = {
 
   // Landing
   "landing.hero.title": { vi: "Khám Phá Bản Thân Qua Con Số & Phân Tích Tâm Lý Học", en: "Discover Yourself Through Numbers and Psychology-Based Insights" },
-  "landing.hero.subtitle": { vi: "Nền tảng khám phá bản thân hiện đại, sử dụng thần số học như công cụ tâm lý để định hướng nghề nghiệp và phát triển cá nhân.", en: "A modern self-discovery platform that uses numerology as a psychological tool for career guidance and personal growth." },
-  "landing.hero.cta": { vi: "Xem Tử Vi Miễn Phí", en: "Try Free Eastern Astrology Reading" },
+  "landing.hero.subtitle": {
+  "vi": "Một nền tảng tự khám phá bản thân hiện đại, kết hợp trí tuệ cổ điển với phân tích tâm lý để giúp bạn hiểu mình rõ hơn và lựa chọn con đường phù hợp.",
+  "en": "A modern self-discovery platform combining ancient wisdom with psychological analysis to help you understand yourself and choose your path with clarity."
+},
+ "landing.hero.cta": {
+  "vi": "Bắt đầu khám phá",
+  "en": "Start Your Journey"
+},
   "landing.hero.explore": { vi: "Khám Phá Tất Cả Công Cụ", en: "Explore All Tools" },
-  "landing.howItWorks": { vi: "Cách Hoạt Động", en: "How It Works" },
-  "landing.howItWorksDesc": { vi: "Dựa trên tâm lý học, được hỗ trợ bởi phân tích chuyên sâu.", en: "Grounded in psychology, powered by thoughtful analysis." },
-  "landing.feature1.title": { vi: "Phân Tích AI Cá Nhân Hóa", en: "Personalized AI Interpretation" },
-  "landing.feature1.desc": { vi: "Nhận phân tích dựa trên tâm lý học, phù hợp với hồ sơ riêng của bạn.", en: "Get psychology-based insights tailored to your unique profile." },
-  "landing.feature2.title": { vi: "Định Hướng Nghề Nghiệp", en: "Career Guidance" },
-  "landing.feature2.desc": { vi: "Khám phá con đường sự nghiệp phù hợp với thế mạnh tự nhiên của bạn.", en: "Discover career paths aligned with your natural strengths." },
-  "landing.feature3.title": { vi: "Phân Tích Cuộc Sống", en: "Daily Life Insights" },
-  "landing.feature3.desc": { vi: "Gợi ý thực tế giúp bạn trong các mối quan hệ, quyết định và phát triển.", en: "Actionable reflections to help you navigate relationships and growth." },
-  "landing.feature4.title": { vi: "Riêng Tư & An Toàn", en: "Private and Secure" },
-  "landing.feature4.desc": { vi: "Dữ liệu của bạn luôn thuộc về bạn. Không chia sẻ, không theo dõi.", en: "Your data stays yours. No sharing, no tracking." },
-  "landing.disclaimer": { vi: "Nền tảng này cung cấp công cụ tự suy ngẫm, không phải dự đoán số phận.", en: "This platform provides self-reflection tools, not destiny prediction." },
+  "landing.howItWorks": {
+  "vi": "Cách nền tảng hoạt động",
+  "en": "How It Works"
+},
+"landing.howItWorksDesc": {
+  "vi": "Dựa trên tâm lý học hiện đại, kết hợp các hệ thống biểu tượng để tạo nên góc nhìn sâu sắc về bản thân.",
+  "en": "Grounded in modern psychology and enriched by symbolic systems for deeper self-understanding."
+},
+"landing.feature1.title": {
+  "vi": "Phân tích cá nhân hóa",
+  "en": "Personalized Insights"
+},
+"landing.feature1.desc": {
+  "vi": "Mỗi phân tích được xây dựng riêng cho bạn, phản ánh tính cách, xu hướng và điểm mạnh nội tại.",
+  "en": "Each interpretation is tailored to reflect your personality traits, tendencies, and inner strengths."
+},
+
+"landing.feature2.title": {
+  "vi": "Định hướng nghề nghiệp",
+  "en": "Career Orientation"
+},
+"landing.feature2.desc": {
+  "vi": "Hiểu rõ khả năng tự nhiên của bạn để lựa chọn hướng đi nghề nghiệp phù hợp và bền vững.",
+  "en": "Understand your natural abilities to choose a career path that fits and endures."
+},
+
+"landing.feature3.title": {
+  "vi": "Góc nhìn đời sống",
+  "en": "Life Reflections"
+},
+"landing.feature3.desc": {
+  "vi": "Những gợi ý giúp bạn nhìn lại các mối quan hệ, quyết định và hành trình phát triển bản thân.",
+  "en": "Thoughtful reflections for relationships, decisions, and personal growth."
+},
+
+"landing.feature4.title": {
+  "vi": "Riêng tư tuyệt đối",
+  "en": "Privacy First"
+},
+"landing.feature4.desc": {
+  "vi": "Thông tin của bạn được bảo vệ và chỉ phục vụ cho quá trình tự khám phá.",
+  "en": "Your information is protected and used only for your self-discovery journey."
+},
+"landing.disclaimer": {
+  "vi": "Nền tảng này được thiết kế như một công cụ tự chiêm nghiệm và hiểu bản thân, không nhằm dự đoán hay định đoạt tương lai.",
+  "en": "This platform is designed for self-reflection and understanding, not for predicting or determining destiny."
+},
 
   // Calculator
   "calc.title": { vi: "Xem Thần Số Học", en: "Numerology Reading" },
@@ -110,74 +152,264 @@ export const translations = {
   "result.signIn": { vi: "Đăng nhập", en: "Sign In" },
 
   // Chat
-  "chat.title": { vi: "Tư Vấn", en: "Consultation" },
-  "chat.subtitle": { vi: "Đồng hành cùng bạn trên hành trình tự khám phá.", en: "Your self-discovery companion." },
-  "chat.placeholder": { vi: "Hỏi về nghề nghiệp, thế mạnh, phát triển cá nhân...", en: "Ask about your career, strengths, growth..." },
-  "chat.welcome": { vi: "Xin chào! Tôi là tư vấn viên chuyên về phân tích tâm lý và phát triển bản thân. Hãy chọn một chủ đề bên dưới hoặc đặt câu hỏi bất kỳ.", en: "Hello! I'm your self-discovery consultant. Choose a topic below or ask anything." },
-  "chat.typing.reply": { vi: "Đang trả lời", en: "Replying" },
-  "chat.typing.thinking": { vi: "Đang suy nghĩ", en: "Thinking" },
-  "chat.errorFallback": { vi: "Xin lỗi, hiện tại mình chưa thể trả lời. Bạn có thể thử lại sau ít phút.", en: "Sorry, I can't respond right now. Please try again in a few minutes." },
-  "chat.quickAction.explain": { vi: "Giải thích kết quả Thần số học", en: "Explain my numerology result" },
-  "chat.quickAction.career": { vi: "Định hướng nghề nghiệp", en: "Career guidance" },
-  "chat.quickAction.growth": { vi: "Phát triển cá nhân", en: "Personal growth" },
-  "chat.quickAction.summary": { vi: "Phân tích tổng hợp", en: "Overall summary" },
-  "chat.quickPrompt.explain": { vi: "Hãy giải thích chi tiết kết quả thần số học của tôi.", en: "Please explain my numerology result in detail." },
-  "chat.quickPrompt.career": { vi: "Dựa trên hồ sơ của tôi, hãy tư vấn định hướng nghề nghiệp phù hợp.", en: "Based on my profile, suggest suitable career directions." },
-  "chat.quickPrompt.growth": { vi: "Tôi muốn được tư vấn về phát triển bản thân và điểm mạnh/yếu.", en: "Advise me on personal growth and my strengths/weaknesses." },
-  "chat.quickPrompt.summary": { vi: "Hãy phân tích tổng hợp các khía cạnh tâm lý và tiềm năng của tôi.", en: "Provide an overall analysis of my psychological traits and potential." },
+// Chat
+"chat.title": {
+  "vi": "Đối thoại & Chiêm nghiệm",
+  "en": "Dialogue & Reflection"
+},
+"chat.subtitle": {
+  "vi": "Người bạn đồng hành trong hành trình hiểu mình.",
+  "en": "Your companion on the path of self-understanding."
+},
+"chat.placeholder": {
+  "vi": "Hỏi về nghề nghiệp, thế mạnh, cảm xúc, định hướng cuộc sống...",
+  "en": "Ask about career, strengths, emotions, or life direction..."
+},
+"chat.welcome": {
+  "vi": "Chào bạn! Tôi ở đây để cùng bạn nhìn lại bản thân qua góc nhìn tâm lý và phát triển cá nhân. Bạn có thể chọn một chủ đề hoặc đặt câu hỏi bất kỳ.",
+  "en": "Hello! I'm here to help you reflect on yourself through psychological and personal development perspectives. Choose a topic or ask anything."
+},
+"chat.typing.reply": {
+  "vi": "Đang phản hồi",
+  "en": "Responding"
+},
+"chat.typing.thinking": {
+  "vi": "Đang suy ngẫm",
+  "en": "Reflecting"
+},
+"chat.errorFallback": {
+  "vi": "Xin lỗi, hệ thống đang tạm gián đoạn. Bạn có thể quay lại sau ít phút.",
+  "en": "Sorry, the system is temporarily unavailable. Please try again shortly."
+},
+"chat.quickAction.explain": {
+  "vi": "Hiểu rõ hồ sơ của tôi",
+  "en": "Understand my profile"
+},
+"chat.quickAction.career": {
+  "vi": "Định hướng nghề nghiệp",
+  "en": "Career orientation"
+},
+"chat.quickAction.growth": {
+  "vi": "Phát triển bản thân",
+  "en": "Personal development"
+},
+"chat.quickAction.summary": {
+  "vi": "Tổng hợp & chiêm nghiệm",
+  "en": "Overall reflection"
+},
+"chat.quickPrompt.explain": {
+  "vi": "Hãy giúp tôi hiểu rõ hơn hồ sơ thần số học của mình.",
+  "en": "Help me better understand my numerology profile."
+},
+"chat.quickPrompt.career": {
+  "vi": "Dựa trên hồ sơ của tôi, hãy gợi ý những hướng nghề nghiệp phù hợp.",
+  "en": "Based on my profile, suggest suitable career paths."
+},
+"chat.quickPrompt.growth": {
+  "vi": "Tôi muốn được tư vấn về điểm mạnh và hướng phát triển bản thân.",
+  "en": "Advise me on my strengths and personal growth."
+},
+"chat.quickPrompt.summary": {
+  "vi": "Hãy giúp tôi nhìn tổng thể về tính cách và tiềm năng của mình.",
+  "en": "Provide an overall view of my personality and potential."
+},
 
   // Dashboard
   "dashboard.title": { vi: "Khám Phá", en: "Discover" },
-  "dashboard.subtitle": { vi: "Khám phá các công cụ tự hiểu bản thân dựa trên tâm lý học.", en: "Explore self-discovery tools grounded in psychology." },
-  "dashboard.comingSoon": { vi: "Sắp ra mắt thêm nhiều công cụ. Mỗi module được thiết kế như công cụ tự suy ngẫm tâm lý.", en: "More tools coming soon. Each module is designed as a psychological self-reflection tool." },
-  "dashboard.numerology.desc": { vi: "Khám phá Số Chủ Đạo và định hướng nghề nghiệp qua tâm lý số học.", en: "Discover your Life Path and career alignment through number psychology." },
-  "dashboard.eastern.desc": { vi: "Phân tích Tử Vi và Bát Tự để hiểu sâu hơn về bản thân.", en: "Tu Vi and Bazi analysis for deeper self-understanding." },
-  "dashboard.western.desc": { vi: "Giải đọc bản đồ sao qua lăng kính tâm lý hiện đại.", en: "Birth chart interpretation through a modern lens." },
-  "dashboard.tarot.desc": { vi: "Đọc bài Tarot suy ngẫm giúp ra quyết định rõ ràng.", en: "Reflective card readings for decision-making clarity." },
-  "dashboard.iching.desc": { vi: "Trí tuệ cổ đại được diễn giải qua góc nhìn tâm lý.", en: "Ancient wisdom reframed as psychological guidance." },
-  "dashboard.career.desc": { vi: "Khai phá con đường nghề nghiệp phù hợp với bộ chỉ số tự khám phá của bạn.", en: "Unlock career paths aligned with your self-discovery profile." },
+"dashboard.subtitle": {
+  "vi": "Những công cụ giúp bạn soi chiếu bản thân qua lăng kính tâm lý học và tri thức cổ điển.",
+  "en": "Tools that help you reflect on yourself through psychology and timeless wisdom."
+},
+"dashboard.comingSoon": {
+  "vi": "Nhiều công cụ mới sẽ sớm xuất hiện. Mỗi module là một không gian để bạn chiêm nghiệm và hiểu mình sâu hơn.",
+  "en": "More tools are coming soon. Each module is designed as a space for reflection and deeper self-understanding."
+},
+"dashboard.numerology.desc": {
+  "vi": "Khám phá Số Chủ Đạo và những khuynh hướng tính cách ảnh hưởng đến con đường nghề nghiệp của bạn.",
+  "en": "Explore your Life Path and personality patterns that shape your career direction."
+},
+"dashboard.eastern.desc": {
+  "vi": "Tử Vi và Bát Tự dưới góc nhìn tâm lý, giúp bạn hiểu cấu trúc nội tâm và chu kỳ cuộc sống.",
+  "en": "Tu Vi and Bazi interpreted psychologically to understand your inner structure and life cycles."
+},
+"dashboard.western.desc": {
+  "vi": "Bản đồ sao như một tấm gương phản chiếu cảm xúc, động lực và tiềm năng phát triển.",
+  "en": "Your birth chart as a mirror of emotions, motivations, and growth potential."
+},
+"dashboard.tarot.desc": {
+  "vi": "Những lá bài gợi mở suy ngẫm, hỗ trợ bạn nhìn rõ hơn các lựa chọn trước mắt.",
+  "en": "Cards that invite reflection and bring clarity to your current choices."
+},
+"dashboard.iching.desc": {
+  "vi": "Trí tuệ Kinh Dịch được diễn giải như một công cụ quan sát biến chuyển tâm lý.",
+  "en": "I Ching wisdom reframed as a tool to observe psychological change."
+},
+"dashboard.career.desc": {
+  "vi": "Gợi mở con đường nghề nghiệp phù hợp với bản đồ tự khám phá của riêng bạn.",
+  "en": "Reveal career directions aligned with your unique self-discovery profile."
+},
 
   // Profile
-  "profile.tagline": { vi: "Hồ sơ cá nhân", en: "Personal Profile" },
-  "profile.title": { vi: "Hoàn Thiện Thông Tin", en: "Complete Your Profile" },
-  "profile.subtitle": { vi: "Giúp hệ thống phân tích chính xác hơn cho tất cả công cụ.", en: "Helps us provide more accurate guidance across tools." },
-  "profile.fullName": { vi: "Họ và Tên", en: "Full Name" },
-  "profile.fullNamePlaceholder": { vi: "Nhập họ và tên đầy đủ", en: "Enter your full name" },
-  "profile.dob": { vi: "Ngày Sinh Dương Lịch", en: "Solar Date of Birth" },
-  "profile.timeOfBirth": { vi: "Giờ Sinh (tuỳ chọn)", en: "Time of Birth (optional)" },
-  "profile.gender": { vi: "Giới Tính", en: "Gender" },
-  "profile.genderPlaceholder": { vi: "Chọn giới tính", en: "Select gender" },
-  "profile.placeOfBirth": { vi: "Nơi Sinh", en: "Place of Birth" },
-  "profile.placePlaceholder": { vi: "Tỉnh/Thành, Quận/Huyện, Phường/Xã", en: "Province, District, Ward" },
-  "profile.province": { vi: "Tỉnh/Thành", en: "Province" },
-  "profile.district": { vi: "Quận/Huyện", en: "District" },
-  "profile.ward": { vi: "Phường/Xã", en: "Ward" },
-  "profile.provincePlaceholder": { vi: "Chọn tỉnh/thành", en: "Select province" },
-  "profile.districtPlaceholder": { vi: "Chọn quận/huyện", en: "Select district" },
-  "profile.wardPlaceholder": { vi: "Chọn phường/xã", en: "Select ward" },
-  "profile.locationLoading": { vi: "Đang tải danh sách...", en: "Loading locations..." },
-  "profile.timeNote": { vi: "Giờ sinh có thể bỏ qua, nhưng nếu có sẽ tăng độ chính xác.", en: "Time of birth is optional, but including it improves accuracy." },
-  "profile.save": { vi: "Lưu Hồ Sơ", en: "Save Profile" },
-  "profile.saving": { vi: "Đang lưu...", en: "Saving..." },
-  "profile.fullNameError": { vi: "Vui lòng nhập họ và tên.", en: "Please enter your full name." },
-  "profile.dobError": { vi: "Vui lòng chọn ngày sinh.", en: "Please select your date of birth." },
-  "profile.placeError": { vi: "Vui lòng nhập nơi sinh.", en: "Please enter your place of birth." },
+"profile.tagline": {
+  "vi": "Hồ sơ cá nhân",
+  "en": "Personal Profile"
+},
+"profile.title": {
+  "vi": "Xây Dựng Hồ Sơ Của Bạn",
+  "en": "Build Your Personal Profile"
+},
+"profile.subtitle": {
+  "vi": "Thông tin này giúp các công cụ phân tích sâu và phù hợp hơn với hành trình của bạn.",
+  "en": "This information helps personalize and deepen your experience across all tools."
+},
+"profile.fullName": {
+  "vi": "Họ và tên",
+  "en": "Full name"
+},
+"profile.fullNamePlaceholder": {
+  "vi": "Nhập đầy đủ họ và tên của bạn",
+  "en": "Enter your full name"
+},
+"profile.dob": {
+  "vi": "Ngày sinh (Dương lịch)",
+  "en": "Date of birth (solar calendar)"
+},
+"profile.timeOfBirth": {
+  "vi": "Giờ sinh (không bắt buộc)",
+  "en": "Time of birth (optional)"
+},
+"profile.gender": {
+  "vi": "Giới tính",
+  "en": "Gender"
+},
+"profile.genderPlaceholder": {
+  "vi": "Chọn giới tính",
+  "en": "Select gender"
+},
+"profile.placeOfBirth": {
+  "vi": "Nơi sinh",
+  "en": "Place of birth"
+},
+"profile.placePlaceholder": {
+  "vi": "Tỉnh/Thành, Quận/Huyện, Phường/Xã",
+  "en": "Province, District, Ward"
+},
+"profile.province": {
+  "vi": "Tỉnh / Thành phố",
+  "en": "Province"
+},
+"profile.district": {
+  "vi": "Quận / Huyện",
+  "en": "District"
+},
+"profile.ward": {
+  "vi": "Phường / Xã",
+  "en": "Ward"
+},
+"profile.provincePlaceholder": {
+  "vi": "Chọn Tỉnh / Thành phố",
+  "en": "Select province"
+},
+"profile.districtPlaceholder": {
+  "vi": "Chọn Quận / Huyện",
+  "en": "Select district"
+},
+"profile.wardPlaceholder": {
+  "vi": "Chọn Phường / Xã",
+  "en": "Select ward"
+},
+"profile.locationLoading": {
+  "vi": "Đang tải dữ liệu địa lý...",
+  "en": "Loading location data..."
+},
+"profile.timeNote": {
+  "vi": "Nếu có giờ sinh, hệ thống sẽ phân tích chi tiết và chính xác hơn.",
+  "en": "Including your time of birth allows for more refined insights."
+},
+"profile.save": {
+  "vi": "Lưu hồ sơ",
+  "en": "Save profile"
+},
+"profile.saving": {
+  "vi": "Đang lưu thông tin...",
+  "en": "Saving your profile..."
+},
+"profile.fullNameError": {
+  "vi": "Vui lòng nhập đầy đủ họ và tên.",
+  "en": "Please enter your full name."
+},
+"profile.dobError": {
+  "vi": "Vui lòng chọn ngày sinh.",
+  "en": "Please select your date of birth."
+},
+"profile.placeError": {
+  "vi": "Vui lòng nhập nơi sinh.",
+  "en": "Please enter your place of birth."
+},
 
   // Module pages
-  "module.numerology.title": { vi: "Thần Số Học", en: "Numerology" },
-  "module.numerology.desc": { vi: "Khám phá Số Chủ Đạo và định hướng nghề nghiệp qua tâm lý số học.", en: "Explore your Life Path and career alignment through psychological numerology." },
-  "module.eastern.title": { vi: "Tử Vi Phương Đông", en: "Eastern Astrology" },
-  "module.eastern.desc": { vi: "Phân tích Tử Vi và Bát Tự để hiểu sâu hơn về bản thân.", en: "Analyze Tu Vi and Bazi for deeper self-understanding." },
-  "module.western.title": { vi: "Chiêm Tinh Phương Tây", en: "Western Astrology" },
-  "module.western.desc": { vi: "Giải đọc bản đồ sao qua lăng kính tâm lý hiện đại.", en: "Interpret your birth chart through a modern psychological lens." },
-  "module.tarot.title": { vi: "Tarot", en: "Tarot" },
-  "module.tarot.desc": { vi: "Đọc bài Tarot suy ngẫm giúp ra quyết định rõ ràng.", en: "Reflective Tarot readings for clearer decisions." },
-  "module.iching.title": { vi: "Kinh Dịch", en: "I Ching" },
-  "module.iching.desc": { vi: "Trí tuệ cổ đại được diễn giải qua góc nhìn tâm lý.", en: "Ancient wisdom reframed as psychological guidance." },
-  "module.career.title": { vi: "Tư Vấn Nghề Nghiệp AI", en: "Career AI" },
-  "module.career.desc": { vi: "Tư vấn nghề nghiệp bằng AI dựa trên hồ sơ tự khám phá.", en: "AI career coaching based on your self-discovery profile." },
-  "module.start": { vi: "Bắt Đầu Tư Vấn", en: "Start Guidance" },
-  "module.promptPlaceholder": { vi: "Nhập câu hỏi hoặc chủ đề bạn muốn khám phá...", en: "Enter the question or topic you want to explore..." },
+"module.numerology.title": {
+  "vi": "Thần Số Học",
+  "en": "Numerology"
+},
+"module.numerology.desc": {
+  "vi": "Những con số phản ánh khuynh hướng tính cách và định hướng phát triển cá nhân.",
+  "en": "Numbers that reflect personality patterns and personal growth directions."
+},
+
+"module.eastern.title": {
+  "vi": "Tử Vi Phương Đông",
+  "en": "Eastern Astrology"
+},
+"module.eastern.desc": {
+  "vi": "Khám phá cấu trúc nội tâm và chu kỳ cuộc sống qua Tử Vi và Bát Tự.",
+  "en": "Explore inner structure and life cycles through Tu Vi and Bazi."
+},
+
+"module.western.title": {
+  "vi": "Chiêm Tinh Phương Tây",
+  "en": "Western Astrology"
+},
+"module.western.desc": {
+  "vi": "Bản đồ sao như ngôn ngữ của cảm xúc và động lực bên trong bạn.",
+  "en": "Your birth chart as a language of emotions and inner drives."
+},
+
+"module.tarot.title": {
+  "vi": "Tarot",
+  "en": "Tarot"
+},
+"module.tarot.desc": {
+  "vi": "Những hình ảnh biểu tượng giúp bạn suy ngẫm và ra quyết định sáng suốt hơn.",
+  "en": "Symbolic images that support reflection and clearer decision-making."
+},
+
+"module.iching.title": {
+  "vi": "Kinh Dịch",
+  "en": "I Ching"
+},
+"module.iching.desc": {
+  "vi": "Trí tuệ cổ đại soi sáng những chuyển động tâm lý hiện tại.",
+  "en": "Ancient wisdom illuminating present psychological shifts."
+},
+
+"module.career.title": {
+  "vi": "Tư Vấn Nghề Nghiệp AI",
+  "en": "AI Career Guidance"
+},
+"module.career.desc": {
+  "vi": "Đối thoại cùng AI để hiểu rõ hơn con đường nghề nghiệp phù hợp với bạn.",
+  "en": "Dialogue with AI to clarify career paths aligned with who you are."
+},
+
+"module.start": {
+  "vi": "Bắt đầu hành trình",
+  "en": "Begin your journey"
+},
+"module.promptPlaceholder": {
+  "vi": "Nhập câu hỏi hoặc chủ đề bạn muốn chiêm nghiệm...",
+  "en": "Enter a question or topic you wish to reflect on..."
+},
 
   // Login
   "login.welcome": { vi: "Chào Mừng Trở Lại", en: "Welcome Back" },
@@ -212,51 +444,181 @@ export const translations = {
   "login.error.passwordWeak": { vi: "Mật khẩu không hợp lệ. Vui lòng dùng mật khẩu mạnh hơn.", en: "Password is not valid. Please use a stronger password." },
 
   // History
-  "history.title": { vi: "Lịch Sử Xem", en: "Reading History" },
-  "history.subtitle": { vi: "Xem lại các bài phân tích trước đây.", en: "View your past readings and insights." },
-  "history.empty": { vi: "Chưa có bài phân tích nào", en: "No readings yet" },
-  "history.emptyDesc": { vi: "Bắt đầu xem thần số học đầu tiên để lưu lịch sử tại đây.", en: "Start your first numerology reading to see your history here." },
-  "history.startReading": { vi: "Bắt Đầu Xem", en: "Start a Reading" },
-  "history.view": { vi: "Xem", en: "View" },
-  "history.loadError": { vi: "Không thể tải lịch sử", en: "Failed to load readings" },
-  "history.deleteError": { vi: "Không thể xóa kết quả", en: "Failed to delete reading" },
-  "history.deleteSuccess": { vi: "Đã xóa kết quả", en: "Reading deleted" },
-  "history.explore": { vi: "Khám Phá", en: "Explore" },
-  "history.section.eastern": { vi: "Tử Vi Phương Đông", en: "Eastern Astrology" },
-  "history.section.easternDesc": { vi: "Phân tích Tử Vi và Bát Tự để hiểu sâu hơn về bản thân.", en: "Tu Vi and Bazi analysis for deeper self-understanding." },
-  "history.section.emptyTitle": { vi: "Chưa có dữ liệu", en: "No data yet" },
-  "history.section.emptyDesc": { vi: "Hãy xem một luận giải để lưu vào lịch sử.", en: "Complete a reading to save it here." },
-  "history.eastern.defaultFileName": { vi: "Lá số tử vi", en: "Birth chart" },
-  "history.eastern.viewSavedImage": { vi: "Xem ảnh đã lưu", en: "View saved image" },
-  "history.section.numerology": { vi: "Thần Số Học", en: "Numerology" },
-  "history.section.numerologyDesc": { vi: "Khám phá Số Chủ Đạo và định hướng nghề nghiệp qua tâm lý số học.", en: "Discover your Life Path and career alignment through number psychology." },
-  "history.section.comingSoon": { vi: "Sắp ra mắt", en: "Coming soon" },
-  "history.comingSoon.badge": { vi: "Sắp ra mắt", en: "Coming soon" },
-  "history.comingSoon.western.title": { vi: "Chiêm Tinh Phương Tây", en: "Western Astrology" },
-  "history.comingSoon.western.desc": { vi: "Giải đọc bản đồ sao qua lăng kính tâm lý hiện đại.", en: "Birth chart interpretation through a modern psychological lens." },
-  "history.comingSoon.tarot.title": { vi: "Tarot", en: "Tarot" },
-  "history.comingSoon.tarot.desc": { vi: "Đọc bài Tarot suy ngẫm giúp ra quyết định rõ ràng.", en: "Reflective Tarot readings for decision-making clarity." },
-  "history.comingSoon.iching.title": { vi: "Kinh Dịch", en: "I Ching" },
-  "history.comingSoon.iching.desc": { vi: "Trí tuệ cổ đại được diễn giải qua góc nhìn tâm lý.", en: "Ancient wisdom reframed as psychological guidance." },
-  "history.comingSoon.career.title": { vi: "Tư Vấn Nghề Nghiệp", en: "Career" },
-  "history.comingSoon.career.desc": { vi: "Khai phá con đường nghề nghiệp phù hợp với bộ chỉ số tự khám phá của bạn.", en: "Unlock career paths aligned with your self-discovery profile." },
-
-  "history.eastern.option.upload.label": { vi: "Tải lá số", en: "Upload chart" },
-  "history.eastern.option.upload.desc": { vi: "Upload ảnh lá số tử vi để luận giải chi tiết", en: "Upload a chart image for detailed interpretation" },
-  "history.eastern.option.overview.label": { vi: "Luận giải tổng quan", en: "Overview" },
-  "history.eastern.option.overview.desc": { vi: "Phân tích toàn diện lá số dựa trên thông tin cá nhân", en: "Comprehensive analysis based on your profile" },
-  "history.eastern.option.career.label": { vi: "Sự nghiệp & Công danh", en: "Career" },
-  "history.eastern.option.career.desc": { vi: "Phân tích cung Quan Lộc và xu hướng nghề nghiệp", en: "Analyze career tendencies and direction" },
-  "history.eastern.option.marriage.label": { vi: "Hôn nhân & Gia đạo", en: "Relationships" },
-  "history.eastern.option.marriage.desc": { vi: "Luận giải cung Phu Thê và tình duyên", en: "Relationship insights and patterns" },
-  "history.eastern.option.finance.label": { vi: "Tài chính & Tài vận", en: "Finance" },
-  "history.eastern.option.finance.desc": { vi: "Phân tích cung Tài Bạch và vận tài lộc", en: "Finance tendencies and money habits" },
-  "history.eastern.option.health.label": { vi: "Sức khoẻ & Phúc đức", en: "Health" },
-  "history.eastern.option.health.desc": { vi: "Phân tích cung Tật Ách và Phúc Đức", en: "Wellbeing and resilience reflections" },
-  "history.eastern.option.fortune.label": { vi: "Thời vận & Đại vận", en: "Cycles" },
-  "history.eastern.option.fortune.desc": { vi: "Xem vận hạn theo từng giai đoạn cuộc đời", en: "Life cycles and periods to focus on" },
-  "history.eastern.option.image.label": { vi: "Ảnh minh hoạ vợ chồng", en: "Couple illustration" },
-  "history.eastern.option.image.desc": { vi: "Tạo ảnh minh hoạ phong cách Á Đông", en: "Generate an Eastern-style illustration" },
+"history.title": {
+  "vi": "Hành Trình Đã Lưu",
+  "en": "Your Journey History"
+},
+"history.subtitle": {
+  "vi": "Nhìn lại những lần bạn đã soi chiếu và hiểu mình sâu hơn.",
+  "en": "Review your past reflections and insights."
+},
+"history.empty": {
+  "vi": "Chưa có phân tích nào",
+  "en": "No reflections yet"
+},
+"history.emptyDesc": {
+  "vi": "Hãy bắt đầu một lần khám phá để lưu lại hành trình của bạn tại đây.",
+  "en": "Start your first reflection to build your personal history."
+},
+"history.startReading": {
+  "vi": "Bắt đầu khám phá",
+  "en": "Start exploring"
+},
+"history.view": {
+  "vi": "Xem lại",
+  "en": "View"
+},
+"history.loadError": {
+  "vi": "Không thể tải dữ liệu lịch sử.",
+  "en": "Unable to load history."
+},
+"history.deleteError": {
+  "vi": "Không thể xoá kết quả này.",
+  "en": "Failed to delete this entry."
+},
+"history.deleteSuccess": {
+  "vi": "Đã xoá khỏi lịch sử của bạn.",
+  "en": "Removed from your history."
+},
+"history.explore": {
+  "vi": "Khám phá",
+  "en": "Explore"
+},
+"history.section.eastern": {
+  "vi": "Tử Vi Phương Đông",
+  "en": "Eastern Astrology"
+},
+"history.section.easternDesc": {
+  "vi": "Khám phá bản thân qua Tử Vi và Bát Tự dưới góc nhìn tâm lý.",
+  "en": "Explore yourself through Tu Vi and Bazi with a psychological lens."
+},
+"history.section.emptyTitle": {
+  "vi": "Chưa có dữ liệu",
+  "en": "No data yet"
+},
+"history.section.emptyDesc": {
+  "vi": "Hãy hoàn thành một lần luận giải để lưu tại đây.",
+  "en": "Complete a reading to save it here."
+},
+"history.eastern.defaultFileName": {
+  "vi": "Lá số của bạn",
+  "en": "Your birth chart"
+},
+"history.eastern.viewSavedImage": {
+  "vi": "Xem hình đã lưu",
+  "en": "View saved image"
+},
+"history.section.numerology": {
+  "vi": "Thần Số Học",
+  "en": "Numerology"
+},
+"history.section.numerologyDesc": {
+  "vi": "Những con số phản ánh khuynh hướng và định hướng cuộc sống.",
+  "en": "Numbers reflecting life patterns and direction."
+},
+"history.section.comingSoon": {
+  "vi": "Sắp ra mắt",
+  "en": "Coming soon"
+},
+"history.comingSoon.badge": {
+  "vi": "Sắp ra mắt",
+  "en": "Coming soon"
+},
+"history.comingSoon.western.title": {
+  "vi": "Chiêm Tinh Phương Tây",
+  "en": "Western Astrology"
+},
+"history.comingSoon.western.desc": {
+  "vi": "Bản đồ sao được diễn giải qua góc nhìn tâm lý hiện đại.",
+  "en": "Birth chart interpretation through modern psychology."
+},
+"history.comingSoon.tarot.title": {
+  "vi": "Tarot",
+  "en": "Tarot"
+},
+"history.comingSoon.tarot.desc": {
+  "vi": "Những hình ảnh biểu tượng giúp bạn suy ngẫm và ra quyết định rõ ràng.",
+  "en": "Symbolic imagery for reflection and clearer decisions."
+},
+"history.comingSoon.iching.title": {
+  "vi": "Kinh Dịch",
+  "en": "I Ching"
+},
+"history.comingSoon.iching.desc": {
+  "vi": "Trí tuệ cổ đại soi sáng chuyển động nội tâm.",
+  "en": "Ancient wisdom illuminating inner change."
+},
+"history.comingSoon.career.title": {
+  "vi": "Tư Vấn Nghề Nghiệp",
+  "en": "Career Guidance"
+},
+"history.comingSoon.career.desc": {
+  "vi": "Khám phá con đường nghề nghiệp phù hợp với bạn.",
+  "en": "Discover career paths aligned with who you are."
+},"history.eastern.option.upload.label": {
+  "vi": "Tải lên lá số",
+  "en": "Upload chart"
+},
+"history.eastern.option.upload.desc": {
+  "vi": "Tải ảnh lá số để được luận giải chi tiết hơn.",
+  "en": "Upload your chart image for deeper interpretation."
+},
+"history.eastern.option.overview.label": {
+  "vi": "Tổng quan",
+  "en": "Overview"
+},
+"history.eastern.option.overview.desc": {
+  "vi": "Bức tranh tổng thể về cuộc sống và nội tâm của bạn.",
+  "en": "A holistic view of your inner life."
+},
+"history.eastern.option.career.label": {
+  "vi": "Sự nghiệp",
+  "en": "Career"
+},
+"history.eastern.option.career.desc": {
+  "vi": "Khuynh hướng nghề nghiệp và con đường phát triển.",
+  "en": "Career tendencies and growth direction."
+},
+"history.eastern.option.marriage.label": {
+  "vi": "Quan hệ & Tình cảm",
+  "en": "Relationships"
+},
+"history.eastern.option.marriage.desc": {
+  "vi": "Những mô thức gắn kết và tình duyên.",
+  "en": "Patterns of connection and affection."
+},
+"history.eastern.option.finance.label": {
+  "vi": "Tài chính",
+  "en": "Finance"
+},
+"history.eastern.option.finance.desc": {
+  "vi": "Thái độ với tiền bạc và khả năng quản lý tài chính.",
+  "en": "Money habits and financial mindset."
+},
+"history.eastern.option.health.label": {
+  "vi": "Sức khoẻ & Nội lực",
+  "en": "Wellbeing"
+},
+"history.eastern.option.health.desc": {
+  "vi": "Sự cân bằng giữa thể chất và tinh thần.",
+  "en": "Balance of body and mind."
+},
+"history.eastern.option.fortune.label": {
+  "vi": "Chu kỳ cuộc sống",
+  "en": "Life cycles"
+},
+"history.eastern.option.fortune.desc": {
+  "vi": "Những giai đoạn cần chú ý và phát triển.",
+  "en": "Life phases to focus on."
+},
+"history.eastern.option.image.label": {
+  "vi": "Ảnh minh hoạ",
+  "en": "Illustration"
+},
+"history.eastern.option.image.desc": {
+  "vi": "Tạo hình ảnh biểu tượng phong cách Á Đông.",
+  "en": "Generate an Eastern-style symbolic illustration."
+},
 
   // ChatPanel
   "chatPanel.qa.explain": { vi: "Giải thích kết quả", en: "Explain result" },
@@ -426,34 +788,58 @@ export const translations = {
   "eastern.upload.formats": { vi: "Hỗ trợ PNG, JPEG", en: "Supports PNG, JPEG" },
   "eastern.upload.start": { vi: "Bắt đầu luận giải", en: "Start analysis" },
   "eastern.upload.note": { vi: "Ảnh sẽ được phân tích và luận giải chi tiết.", en: "The image will be analyzed and explained in detail." },
-  "eastern.upload.slowNote": {
-    vi: "Phân tích ảnh có thể mất 1-3 phút tuỳ chất lượng ảnh và tải hệ thống. Vui lòng đợi.",
-    en: "Image analysis may take 1-3 minutes depending on image quality and system load. Please wait.",
-  },
+"eastern.upload.slowNote": {
+  "vi": "Quá trình phân tích có thể mất từ 1–3 phút tuỳ chất lượng ảnh và tải hệ thống. Vui lòng kiên nhẫn chờ.",
+  "en": "Analysis may take 1–3 minutes depending on image quality and system load. Please wait."
+},
 
   "eastern.option.upload.label": { vi: "Tải lá số", en: "Upload chart" },
-  "eastern.option.upload.desc": { vi: "Upload ảnh lá số tử vi để luận giải chi tiết", en: "Upload a chart image for detailed analysis" },
+"eastern.option.upload.desc": {
+  "vi": "Luận giải chi tiết từng cung qua lá số",
+  "en": "Upload your chart image for a detailed interpretation"
+},
   "eastern.option.upload.prompt": { vi: "Luận giải chi tiết lá số tử vi từ ảnh", en: "Analyze this Eastern astrology chart in detail based on the image" },
   "eastern.option.overview.label": { vi: "Tổng quan", en: "Overview" },
-  "eastern.option.overview.desc": { vi: "Phân tích tổng quan dựa trên thông tin bạn cung cấp", en: "Overview analysis based on your profile" },
+"eastern.option.overview.desc": {
+  "vi": "Bức tranh tổng thể về tính cách và cuộc sống",
+  "en": "A general overview of your personality and life path"
+},
   "eastern.option.overview.prompt": { vi: "Hãy luận giải tổng quan Tử Vi/Bát Tự dựa trên thông tin cá nhân của tôi.", en: "Provide an overview reading (Tu Vi/Bazi) based on my profile." },
   "eastern.option.career.label": { vi: "Sự nghiệp & Công danh", en: "Career" },
-  "eastern.option.career.desc": { vi: "Góc nhìn về sự nghiệp dựa trên thông tin bạn cung cấp", en: "Career lens based on your profile" },
+"eastern.option.career.desc": {
+  "vi": "Phân tích xu hướng sự nghiệp và định hướng phát triển",
+  "en": "Insights into your career tendencies and growth direction"
+},
   "eastern.option.career.prompt": { vi: "Hãy phân tích sự nghiệp/công danh dựa trên thông tin cá nhân của tôi. Nêu rõ điểm mạnh, điểm yếu, rủi ro và gợi ý hành động.", en: "Analyze my career: strengths, weaknesses, risks, and suggested actions." },
   "eastern.option.marriage.label": { vi: "Hôn nhân & Gia đạo", en: "Relationships" },
-  "eastern.option.marriage.desc": { vi: "Góc nhìn quan hệ/hôn nhân dựa trên thông tin bạn cung cấp", en: "Relationship lens based on your profile" },
+"eastern.option.marriage.desc": {
+  "vi": "Góc nhìn về tình duyên và mối quan hệ gia đình",
+  "en": "Insights into love life and family relationships"
+},
   "eastern.option.marriage.prompt": { vi: "Hãy phân tích tình duyên/hôn nhân & gia đạo dựa trên thông tin cá nhân của tôi. Tránh dự đoán định mệnh; ưu tiên gợi ý thực tế.", en: "Analyze relationships in a practical way (avoid fate-based claims)." },
   "eastern.option.finance.label": { vi: "Tài chính & Tài vận", en: "Finance" },
-  "eastern.option.finance.desc": { vi: "Góc nhìn tài chính dựa trên thông tin bạn cung cấp", en: "Finance lens based on your profile" },
+"eastern.option.finance.desc": {
+  "vi": "Đánh giá khuynh hướng tài chính",
+  "en": "Analysis of your financial tendencies"
+},
   "eastern.option.finance.prompt": { vi: "Hãy phân tích tài chính/tài vận dựa trên thông tin cá nhân của tôi. Tập trung vào thói quen tiền bạc, rủi ro và hệ thống quản trị.", en: "Analyze my finances: money habits, risks, and a simple management system." },
   "eastern.option.health.label": { vi: "Sức khoẻ & Phúc đức", en: "Wellbeing" },
-  "eastern.option.health.desc": { vi: "Góc nhìn wellbeing dựa trên thông tin bạn cung cấp", en: "Wellbeing lens based on your profile" },
+"eastern.option.health.desc": {
+  "vi": "Gợi ý chăm sóc sức khỏe và cân bằng tinh thần",
+  "en": "Guidance on wellbeing and mental balance"
+},
   "eastern.option.health.prompt": { vi: "Hãy phân tích sức khỏe/phúc đức theo hướng wellbeing dựa trên thông tin cá nhân của tôi. Không chẩn đoán y khoa; chỉ gợi ý lối sống.", en: "Analyze wellbeing (no medical diagnosis); provide lifestyle suggestions." },
   "eastern.option.fortune.label": { vi: "Thời vận & Đại vận", en: "Life cycles" },
-  "eastern.option.fortune.desc": { vi: "Gợi ý chủ đề theo giai đoạn (mang tính tham khảo)", en: "Phase themes (reference)" },
+"eastern.option.fortune.desc": {
+  "vi": "Chủ đề nổi bật theo từng giai đoạn cuộc đời",
+  "en": "Key themes across different life phases"
+},
   "eastern.option.fortune.prompt": { vi: "Hãy luận giải thời vận theo chủ đề giai đoạn (Đại vận/Tiểu vận) dựa trên thông tin cá nhân của tôi. Tránh khẳng định chắc chắn; đưa checklist chuẩn bị.", en: "Interpret life cycles by phase themes; avoid certainty; include a preparation checklist." },
   "eastern.option.image.label": { vi: "Ảnh minh hoạ người hôn phối", en: "Partner portrait" },
-  "eastern.option.image.desc": { vi: "Tạo ảnh minh hoạ phong cách Á Đông (có thể dùng chân dung và/hoặc lá số)", en: "Generate an Eastern-style portrait (optional portrait and/or chart)" },
+"eastern.option.image.desc": {
+  "vi": "Tạo ảnh minh hoạ về người bạn đời",
+  "en": "Generate an illustration of your partner"
+},
 
   "eastern.image.inputOptions.title": { vi: "Tuỳ chọn đầu vào", en: "Input options" },
   "eastern.image.inputOptions.desc": { vi: "Bạn có thể tải lên chân dung, lá số, cả hai, hoặc không tải lên gì (hệ thống sẽ tạo ảnh dựa trên thông tin hồ sơ).", en: "You can upload a portrait, a chart, both, or upload nothing (we'll generate based on your profile)." },
@@ -495,8 +881,14 @@ export const translations = {
   "notFound.back": { vi: "Về Trang Chủ", en: "Return to Home" },
 
   // Footer
-  "footer.disclaimer": { vi: "Tuyên Bố Miễn Trừ", en: "Disclaimer" },
-  "footer.forReflection": { vi: "Chỉ nhằm mục đích tự hiểu bản thân và suy ngẫm.", en: "For self-understanding and reflection purposes only." },
+"footer.disclaimer": {
+  "vi": "Lưu ý",
+  "en": "Disclaimer"
+},
+"footer.forReflection": {
+  "vi": "Nền tảng này phục vụ mục đích tự suy ngẫm và hiểu bản thân, không phải dự đoán số phận.",
+  "en": "This platform is for self-reflection and personal understanding, not fate prediction."
+},
 
   // SEO
   "seo.home.title": { vi: "Fatelytic — Khám Phá Bản Thân Qua Phân Tích Tâm Lý", en: "Fatelytic — Self-Discovery Through Psychology-Based Insights" },
