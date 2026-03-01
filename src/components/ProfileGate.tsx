@@ -267,7 +267,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
 
   return (
     <div className="mx-auto">
-      <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8">
+      <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8 mx-auto">
         <Reveal from="up" offset={18}>
           <div className="mb-6 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{t("profile.tagline")}</p>
