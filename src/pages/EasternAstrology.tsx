@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 import { useLocation } from "react-router-dom";
+import ZiWeiChartSection from "@/components/eastern/ZiWeiChartSection";
 
 interface SectionItem {
   title: string;
@@ -67,16 +68,55 @@ interface OptionItem {
 }
 const EasternAstrology = () => {
   const { t, lang } = useI18n();
+  const [showZiWeiChart, setShowZiWeiChart] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Force container width change when showZiWeiChart changes
+  useEffect(() => {
+    if (containerRef.current) {
+      if (showZiWeiChart) {
+        containerRef.current.classList.remove('max-w-3xl');
+        containerRef.current.classList.add('max-w-6xl');
+        // Force style with !important
+        containerRef.current.style.setProperty('max-width', '72rem', 'important');
+        
+        // Also apply to parent containers that might be limiting width
+        let parent = containerRef.current.parentElement;
+        while (parent && parent !== document.body) {
+          if (parent.classList.contains('container')) {
+            parent.style.setProperty('max-width', '72rem', 'important');
+          }
+          parent = parent.parentElement;
+        }
+      } else {
+        containerRef.current.classList.remove('max-w-6xl');
+        containerRef.current.classList.add('max-w-3xl');
+        // Reset style
+        containerRef.current.style.removeProperty('max-width');
+        
+        // Reset parent containers
+        let parent = containerRef.current.parentElement;
+        while (parent && parent !== document.body) {
+          if (parent.classList.contains('container')) {
+            parent.style.removeProperty('max-width');
+          }
+          parent = parent.parentElement;
+        }
+      }
+    }
+  }, [showZiWeiChart]);
 
   const layoutConfig = useMemo(
     () => ({
       seo: { titleKey: "seo.eastern.title", descriptionKey: "seo.eastern.desc", path: "/eastern-astrology" },
       disableContentWrapper: false,
-      contentClassName: "container mx-auto flex max-w-3xl flex-col px-4 py-4 md:py-6",
+      contentClassName: showZiWeiChart 
+        ? "container mx-auto flex flex-col max-w-6xl px-4 py-4 md:py-6" 
+        : "container mx-auto flex max-w-3xl flex-col px-4 py-4 md:py-6",
       showAdvisoryNotice: true,
       advisoryNoticeCompact: true,
     }),
-    []
+    [showZiWeiChart]
   );
 
   useLayoutConfig(layoutConfig);
@@ -122,11 +162,6 @@ const EasternAstrology = () => {
   const [qaSessionKey, setQaSessionKey] = useState<string | null>(null);
   const [lastReadingId, setLastReadingId] = useState<string | null>(null);
   const [hoveredOptionId, setHoveredOptionId] = useState<string | null>(null);
-
-  const profileSummary = useMemo(() => {
-    if (!profile) return "";
-    return `${profile.fullName} — ${profile.dateOfBirth}${profile.timeOfBirth ? " · " + profile.timeOfBirth : ""} · ${profile.placeOfBirth}`;
-  }, [profile]);
 
   const slugify = (value: string) => {
     return value
@@ -754,7 +789,7 @@ const EasternAstrology = () => {
 
   return (
     <>
-      <div className="max-w-3xl space-y-6">
+      <div ref={containerRef} className={`space-y-6 transition-all duration-300 ${showZiWeiChart ? 'max-w-6xl mx-auto' : 'max-w-3xl mx-auto'}`}>
         {/* <UserContextBanner /> */}
 
         <Reveal className="text-center" from="up" offset={18}>
@@ -762,124 +797,158 @@ const EasternAstrology = () => {
           <p className="mt-2 text-sm text-muted-foreground">{t("module.eastern.desc")}</p>
         </Reveal>
 
-        {!selectedOption ? (
-          <Reveal className="grid gap-3 sm:grid-cols-2" from="up" offset={18} delay={0.05}>
-            {options.map((option, idx) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => handleOptionClick(option)}
-                onMouseEnter={() => setHoveredOptionId(option.id)}
-                onMouseLeave={() => setHoveredOptionId(null)}
-                className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer"
-              >
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${option.id === "image" ? "bg-gold/15" : "bg-primary/10"}`}>
-                  <option.icon
-                    className={`h-5 w-5 ${option.id === "image" ? "text-gold" : "text-primary"}`}
-                    animate={hoveredOptionId === option.id}
-                    animateOnHover={false}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{t(option.labelKey)}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{t(option.descKey)}</p>
-                </div>
-              </button>
-            ))}
+        {!showZiWeiChart && (
+          <Reveal from="up" offset={18} delay={0.04}>
+            <button
+              type="button"
+              onClick={() => {
+                if (!profile) {
+                  toast.error(t("eastern.missingProfile"));
+                  return;
+                }
+                setShowZiWeiChart(true);
+              }}
+              onMouseEnter={() => setHoveredOptionId("ziwei")}
+              onMouseLeave={() => setHoveredOptionId(null)}
+              className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-transform duration-200 group-hover:scale-105">
+                <Clock className="h-5 w-5 text-primary" animate={hoveredOptionId === "ziwei"} animateOnHover={false} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">Lá số tử vi</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Xem nhanh biểu đồ 12 cung tử vi theo hồ sơ của bạn</p>
+              </div>
+            </button>
           </Reveal>
-        ) : (
-          <div className="space-y-4">
-            <EasternTopBar t={t} selectedOption={selectedOption} options={options} setSelectedOption={setSelectedOption} setResult={setResult} />
+        )}
 
-            {selectedOption === "upload" && (
-              <EasternUploadBlock
-                t={t}
-                loading={loading}
-                result={result}
-                fileInputRef={fileInputRef}
-                uploadPreview={uploadPreview}
-                uploadFileName={uploadFileName}
-                uploadFile={uploadFile}
-                handleFile={handleFile}
-                clearUpload={clearUpload}
-                runAnalyze={() => void runAnalyze()}
-                highlightId={highlightId}
-                setOpenPalaceId={setOpenPalaceId}
-                focusSection={focusSection}
-                scrollToId={scrollToId}
-                renderMarkdown={renderMarkdown}
-                splitParagraphs={splitParagraphs}
-                slugify={slugify}
-                isPalaceSectionTitle={isPalaceSectionTitle}
-                qaOpen={qaOpen}
-                setQaOpen={setQaOpen}
-                qaSessionKey={qaSessionKey}
-                lastReadingId={lastReadingId}
-                profile={profile}
-                selectedOption={selectedOption}
-                qaContextJson={qaContextJson}
-              />
-            )}
+        {showZiWeiChart && profile && (
+          <ZiWeiChartSection profile={profile} onBack={() => setShowZiWeiChart(false)} />
+        )}
 
-            {selectedOption === "image" && (
-              <EasternImageBlock
-                t={t}
-                loading={loading}
-                partnerPortraitPreview={partnerPortraitPreview}
-                partnerPortraitFileName={partnerPortraitFileName}
-                partnerPortraitInputRef={partnerPortraitInputRef}
-                handlePartnerPortraitFile={handlePartnerPortraitFile}
-                partnerChartPreview={partnerChartPreview}
-                partnerChartFileName={partnerChartFileName}
-                partnerChartInputRef={partnerChartInputRef}
-                handlePartnerChartFile={handlePartnerChartFile}
-                runGeneratePartnerImage={runGeneratePartnerImage}
-                setPartnerPortraitPreview={setPartnerPortraitPreview}
-                setPartnerPortraitFileName={setPartnerPortraitFileName}
-                setPartnerPortraitFile={setPartnerPortraitFile}
-                setPartnerChartPreview={setPartnerChartPreview}
-                setPartnerChartFileName={setPartnerChartFileName}
-                setPartnerChartFile={setPartnerChartFile}
-              />
-            )}
-
-            {selectedOption !== "upload" && selectedOption !== "image" && (
-              <EasternProfileReadingBlock
-                t={t}
-                loading={loading}
-                runAnalyze={() => runAnalyze()}
-                result={result}
-                highlightId={highlightId}
-                setOpenPalaceId={setOpenPalaceId}
-                focusSection={focusSection}
-                scrollToId={scrollToId}
-                renderMarkdown={renderMarkdown}
-                splitParagraphs={splitParagraphs}
-                slugify={slugify}
-                isPalaceSectionTitle={isPalaceSectionTitle}
-                qaOpen={qaOpen}
-                setQaOpen={setQaOpen}
-                qaSessionKey={qaSessionKey}
-                lastReadingId={lastReadingId}
-                profile={profile}
-                selectedOption={selectedOption}
-                qaContextJson={qaContextJson}
-              />
-            )}
-
-            {selectedOption === "image" && generatedImages.length > 0 && (
-              <Reveal from="up" offset={18} delay={0.08}>
-                <EasternImageResult
-                  images={generatedImages}
-                  imagenPrompt={generatedImagenPrompt}
-                  imagenPromptVi={generatedImagenPromptVi}
-                  compatibilityScore={generatedCompatibilityScore}
-                  compatibilityRationale={generatedCompatibilityRationale}
-                  spousePortraitDirection={generatedSpousePortraitDirection}
-                />
+        {!showZiWeiChart && (
+          <>
+            {!selectedOption ? (
+              <Reveal className="grid gap-3 sm:grid-cols-2" from="up" offset={18} delay={0.05}>
+                {options.map((option, idx) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleOptionClick(option)}
+                    onMouseEnter={() => setHoveredOptionId(option.id)}
+                    onMouseLeave={() => setHoveredOptionId(null)}
+                    className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 hover:border-primary/40 hover:shadow-md cursor-pointer"
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${option.id === "image" ? "bg-gold/15" : "bg-primary/10"}`}>
+                      <option.icon
+                        className={`h-5 w-5 ${option.id === "image" ? "text-gold" : "text-primary"}`}
+                        animate={hoveredOptionId === option.id}
+                        animateOnHover={false}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{t(option.labelKey)}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{t(option.descKey)}</p>
+                    </div>
+                  </button>
+                ))}
               </Reveal>
+            ) : (
+              <div className="space-y-4">
+                <EasternTopBar t={t} selectedOption={selectedOption} options={options} setSelectedOption={setSelectedOption} setResult={setResult} />
+
+                {selectedOption === "upload" && (
+                  <EasternUploadBlock
+                    t={t}
+                    loading={loading}
+                    result={result}
+                    fileInputRef={fileInputRef}
+                    uploadPreview={uploadPreview}
+                    uploadFileName={uploadFileName}
+                    uploadFile={uploadFile}
+                    handleFile={handleFile}
+                    clearUpload={clearUpload}
+                    runAnalyze={() => void runAnalyze()}
+                    highlightId={highlightId}
+                    setOpenPalaceId={setOpenPalaceId}
+                    focusSection={focusSection}
+                    scrollToId={scrollToId}
+                    renderMarkdown={renderMarkdown}
+                    splitParagraphs={splitParagraphs}
+                    slugify={slugify}
+                    isPalaceSectionTitle={isPalaceSectionTitle}
+                    qaOpen={qaOpen}
+                    setQaOpen={setQaOpen}
+                    qaSessionKey={qaSessionKey}
+                    lastReadingId={lastReadingId}
+                    profile={profile}
+                    selectedOption={selectedOption}
+                    qaContextJson={qaContextJson}
+                  />
+                )}
+
+                {selectedOption === "image" && (
+                  <EasternImageBlock
+                    t={t}
+                    loading={loading}
+                    partnerPortraitPreview={partnerPortraitPreview}
+                    partnerPortraitFileName={partnerPortraitFileName}
+                    partnerPortraitInputRef={partnerPortraitInputRef}
+                    handlePartnerPortraitFile={handlePartnerPortraitFile}
+                    partnerChartPreview={partnerChartPreview}
+                    partnerChartFileName={partnerChartFileName}
+                    partnerChartInputRef={partnerChartInputRef}
+                    handlePartnerChartFile={handlePartnerChartFile}
+                    runGeneratePartnerImage={runGeneratePartnerImage}
+                    setPartnerPortraitPreview={setPartnerPortraitPreview}
+                    setPartnerPortraitFileName={setPartnerPortraitFileName}
+                    setPartnerPortraitFile={setPartnerPortraitFile}
+                    setPartnerChartPreview={setPartnerChartPreview}
+                    setPartnerChartFileName={setPartnerChartFileName}
+                    setPartnerChartFile={setPartnerChartFile}
+                  />
+                )}
+
+                {selectedOption !== "upload" && selectedOption !== "image" && (
+                  <EasternProfileReadingBlock
+                    t={t}
+                    loading={loading}
+                    runAnalyze={() => runAnalyze()}
+                    result={result}
+                    highlightId={highlightId}
+                    setOpenPalaceId={setOpenPalaceId}
+                    focusSection={focusSection}
+                    scrollToId={scrollToId}
+                    renderMarkdown={renderMarkdown}
+                    splitParagraphs={splitParagraphs}
+                    slugify={slugify}
+                    isPalaceSectionTitle={isPalaceSectionTitle}
+                    qaOpen={qaOpen}
+                    setQaOpen={setQaOpen}
+                    qaSessionKey={qaSessionKey}
+                    lastReadingId={lastReadingId}
+                    profile={profile}
+                    selectedOption={selectedOption}
+                    qaContextJson={qaContextJson}
+                  />
+                )}
+
+                {selectedOption === "image" && generatedImages.length > 0 && (
+                  <Reveal from="up" offset={18} delay={0.08}>
+                    <EasternImageResult
+                      images={generatedImages}
+                      imagenPrompt={generatedImagenPrompt}
+                      imagenPromptVi={generatedImagenPromptVi}
+                      compatibilityScore={generatedCompatibilityScore}
+                      compatibilityRationale={generatedCompatibilityRationale}
+                      spousePortraitDirection={generatedSpousePortraitDirection}
+                    />
+                  </Reveal>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </>
