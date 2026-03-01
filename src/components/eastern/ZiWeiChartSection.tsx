@@ -146,13 +146,18 @@ function translateChineseLunarDate(value: string) {
     
     // Extract month (e.g., "Ngũ nguyệt" -> "5")
     let month = "";
-    if (raw.includes("Ngũ nguyệt")) month = "5";
+    if (raw.includes("Nhất nguyệt")) month = "1";
+    else if (raw.includes("Nhị nguyệt")) month = "2";
+    else if (raw.includes("Tam nguyệt")) month = "3";
     else if (raw.includes("Tứ nguyệt")) month = "4";
+    else if (raw.includes("Ngũ nguyệt")) month = "5";
     else if (raw.includes("Lục nguyệt")) month = "6";
     else if (raw.includes("Thất nguyệt")) month = "7";
     else if (raw.includes("Bát nguyệt")) month = "8";
     else if (raw.includes("Cửu nguyệt")) month = "9";
     else if (raw.includes("Thập nguyệt")) month = "10";
+    else if (raw.includes("Thập nhất nguyệt")) month = "11";
+    else if (raw.includes("Thập nhị nguyệt")) month = "12";
     
     // Extract day (e.g., "nhị thập thất" -> "27")
     let day = "";
