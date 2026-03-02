@@ -159,6 +159,458 @@ async function callGeminiJson(
   }
 }
 
+function getEasternUploadSystemMarker(contextJson: unknown, lang: "en" | "vi"): string {
+  if (!contextJson || typeof contextJson !== "object" || Array.isArray(contextJson)) return "";
+  const obj = contextJson as Record<string, unknown>;
+  const uploadSource = obj.uploadSource;
+  const chartOrigin = obj.chartOrigin;
+  const isSaved = uploadSource === "saved" || chartOrigin === "system";
+  if (!isSaved) return "";
+
+  return lang === "vi"
+    ? "\n\nGHI CHÚ HỆ THỐNG (QUAN TRỌNG): Đây là lá số do HỆ THỐNG sinh ra và đã lưu (không phải ảnh user tự upload).\n\n1) DỮ KIỆN LÁ SỐ:\n- Nếu có ziweiChartJson trong contextJson: dùng nó như NGUỒN DỮ KIỆN CHÍNH (authoritative).\n- Tuyệt đối KHÔNG bịa sao/cung/địa bàn. Thiếu gì thì ghi rõ đúng một trong hai câu: 'Không có trong dữ liệu lá số' hoặc 'Không rõ từ ảnh'.\n\n2) THỐNG NHẤT TÊN GỌI:\n- Dùng tên Cung/Sao chuẩn (ví dụ: Cung Mệnh, Cung Thân, Quan Lộc, Tài Bạch, Thiên Di, Phúc Đức, Phu Thê, Điền Trạch, Tật Ách, Phụ Mẫu, Huynh Đệ, Tử Tức, Nô Bộc).\n- Khi viết tổ hợp, dùng đúng dạng: 'Cung Thân đồng cung với cung Quan Lộc'.\n\n3) OVERVIEW ITEMS (BẮT BUỘC ỔN ĐỊNH):\n- overviewItems CHỈ gồm các mục sau, ĐÚNG heading, KHÔNG thêm mục khác: Họ và tên; Ngày sinh dương lịch; Ngày sinh âm lịch; Giờ sinh; Giới tính; Năm xem; Âm dương; Bản mệnh; Cân lượng; Chủ mệnh; Chủ thân; Lai nhân cung; Cung hoàng đạo; Tuổi.\n- Nếu không có dữ liệu: item.text = 'Không có trong dữ liệu lá số'.\n\n4) LUẬN GIẢI 12 CUNG (HEADING CỐ ĐỊNH):\n- Các tiêu đề cung phải theo đúng dạng: 'Cung Mệnh (Luận về con người)', 'Cung Quan Lộc (Luận về công danh)', ... (đủ 12 cung).\n\n5) NGUỒN TRÍCH DẪN:\n- Mỗi đoạn luận giải quan trọng nên kèm nguồn uy tín nếu có: Tử Vi Đẩu Số Toàn Thư, Tử Vi Hàm Số, Trung Châu Tử Vi Đẩu Số (Tứ Hóa Phái), Tử Vi Đẩu Số Tinh Hoa Tập Thành...\n- Văn phong dạng trích dẫn sách: ngắn, rõ, có căn cứ."
+    : "\n\nSYSTEM NOTE (IMPORTANT): This is a SYSTEM-generated saved Tu Vi chart (not a user-uploaded image).\n\n1) CHART FACTS:\n- If contextJson includes ziweiChartJson: treat it as the authoritative source of chart facts.\n- Never invent palaces/stars. If missing, use exactly one: 'Not present in chart data' or 'Not visible from image'.\n\n2) TERMINOLOGY:\n- Use standardized palace/star names and consistent phrasing (e.g. 'Cung Thân đồng cung với cung Quan Lộc').\n\n3) OVERVIEW ITEMS (MUST BE STABLE):\n- overviewItems must contain ONLY these headings (no extras): Họ và tên; Ngày sinh dương lịch; Ngày sinh âm lịch; Giờ sinh; Giới tính; Năm xem; Âm dương; Bản mệnh; Cân lượng; Chủ mệnh; Chủ thân; Lai nhân cung; Cung hoàng đạo; Tuổi.\n- If a value is unavailable: item.text = 'Not present in chart data'.\n\n4) SOURCES:\n- Prefer reputable sources (Tu Vi classics) and write in short book-style excerpt items.";
+}
+
+function isSavedEasternUpload(contextJson: unknown): boolean {
+  if (!contextJson || typeof contextJson !== "object" || Array.isArray(contextJson)) return false;
+  const obj = contextJson as Record<string, unknown>;
+  return obj.uploadSource === "saved" || obj.chartOrigin === "system";
+}
+
+function safeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function extractBirthYear(dateOfBirth?: string | null): number | null {
+  if (!dateOfBirth) return null;
+  const m = String(dateOfBirth).match(/(\d{4})/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  return Number.isFinite(year) ? year : null;
+}
+
+function getCanChiYearVi(year: number): string {
+  const can = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
+  const chi = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
+  const canIndex = (year + 6) % 10;
+  const chiIndex = (year + 8) % 12;
+  return `${can[canIndex]} ${chi[chiIndex]}`;
+}
+
+function getChineseZodiacVi(year: number): string {
+  const animals = [
+    "Con Chuột (Tý)",
+    "Con Trâu (Sửu)",
+    "Con Hổ (Dần)",
+    "Con Mèo (Mão)",
+    "Con Rồng (Thìn)",
+    "Con Rắn (Tỵ)",
+    "Con Ngựa (Ngọ)",
+    "Con Dê (Mùi)",
+    "Con Khỉ (Thân)",
+    "Con Gà (Dậu)",
+    "Con Chó (Tuất)",
+    "Con Heo (Hợi)",
+  ];
+  const idx = (year + 8) % 12;
+  return animals[idx];
+}
+
+function getWesternZodiacVi(dateOfBirth?: string | null): string | null {
+  if (!dateOfBirth) return null;
+  const match = String(dateOfBirth).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!match) return null;
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+
+  const signs = [
+    { name: "Ma Kết", m: 1, d: 20 },
+    { name: "Bảo Bình", m: 2, d: 19 },
+    { name: "Song Ngư", m: 3, d: 21 },
+    { name: "Bạch Dương", m: 4, d: 20 },
+    { name: "Kim Ngưu", m: 5, d: 21 },
+    { name: "Song Tử", m: 6, d: 22 },
+    { name: "Cự Giải", m: 7, d: 23 },
+    { name: "Sư Tử", m: 8, d: 23 },
+    { name: "Xử Nữ", m: 9, d: 23 },
+    { name: "Thiên Bình", m: 10, d: 24 },
+    { name: "Bọ Cạp", m: 11, d: 23 },
+    { name: "Nhân Mã", m: 12, d: 22 },
+    { name: "Ma Kết", m: 12, d: 32 },
+  ];
+  const mmdd = month * 100 + day;
+  for (const s of signs) {
+    if (mmdd < s.m * 100 + s.d) return s.name;
+  }
+  return "Ma Kết";
+}
+
+function getSavedUploadOverviewItems(profile: ProfileContext | undefined, contextJson: unknown) {
+  const ctxObj =
+    contextJson && typeof contextJson === "object" && !Array.isArray(contextJson)
+      ? (contextJson as Record<string, unknown>)
+      : null;
+
+  const ziweiChartJson = ctxObj && ctxObj.ziweiChartJson && typeof ctxObj.ziweiChartJson === "object" ? (ctxObj.ziweiChartJson as Record<string, unknown>) : null;
+  const nowYear = new Date().getFullYear();
+  const birthYear = extractBirthYear(profile?.dateOfBirth ?? null);
+  const tuoi = birthYear ? nowYear - birthYear + 1 : null;
+  const namXem = `${getCanChiYearVi(nowYear)} (${nowYear})${typeof tuoi === "number" ? `, ${tuoi} tuổi` : ""}`;
+
+  const fromChartOrMissing = (keys: string[]): string => {
+    if (!ziweiChartJson) return "Không có trong dữ liệu lá số";
+    for (const k of keys) {
+      const v = ziweiChartJson[k];
+      const s = safeString(v);
+      if (s) return s;
+    }
+    return "Không có trong dữ liệu lá số";
+  };
+
+  const solarDob = safeString(profile?.dateOfBirth) ?? "Không có trong dữ liệu lá số";
+  const lunarDob = safeString(profile?.lunarDateOfBirth) ?? "Không có trong dữ liệu lá số";
+  const timeOfBirth = safeString(profile?.timeOfBirth) ?? "Không có trong dữ liệu lá số";
+  const gender = safeString(profile?.gender) ?? "Không có trong dữ liệu lá số";
+
+  const westernZodiac = getWesternZodiacVi(profile?.dateOfBirth ?? null) ?? "Không có trong dữ liệu lá số";
+  const tuoiConGiap = birthYear ? getChineseZodiacVi(birthYear) : "Không có trong dữ liệu lá số";
+
+  const overviewItems = [
+    { heading: "Họ và tên", text: safeString(profile?.fullName) ?? "Không có trong dữ liệu lá số" },
+    { heading: "Ngày sinh dương lịch", text: solarDob },
+    { heading: "Ngày sinh âm lịch", text: lunarDob },
+    { heading: "Giờ sinh", text: timeOfBirth },
+    { heading: "Giới tính", text: gender },
+    { heading: "Năm xem", text: namXem },
+    { heading: "Âm dương", text: fromChartOrMissing(["amDuong", "yinYang", "am_duong"]) },
+    {
+      heading: "Bản mệnh",
+      text: (() => {
+        const menh = fromChartOrMissing(["banMenh", "menh", "ban_menh"]);
+        const cuc = safeString(ziweiChartJson?.cuc) ?? safeString(ziweiChartJson?.cucLabel) ?? null;
+        const menhKhacCuc = safeString(ziweiChartJson?.menhKhacCuc) ?? safeString(ziweiChartJson?.menh_khac_cuc) ?? null;
+        const parts = [
+          menh !== "Không có trong dữ liệu lá số" ? menh : null,
+          cuc ? `- ${cuc}` : null,
+          menhKhacCuc ? `(${menhKhacCuc})` : null,
+        ].filter(Boolean);
+        return parts.length ? String(parts.join(" ")) : "Không có trong dữ liệu lá số";
+      })(),
+    },
+    { heading: "Cân lượng", text: fromChartOrMissing(["canLuong", "canXuong", "can_xuong", "can_luong"]) },
+    { heading: "Chủ mệnh", text: fromChartOrMissing(["chuMenh", "chu_menh"]) },
+    { heading: "Chủ thân", text: fromChartOrMissing(["chuThan", "chu_than"]) },
+    { heading: "Lai nhân cung", text: fromChartOrMissing(["laiNhanCung", "lai_nhan_cung"]) },
+    { heading: "Cung hoàng đạo", text: westernZodiac },
+    { heading: "Tuổi", text: typeof tuoi === "number" ? `${tuoi} tuổi` : "Không có trong dữ liệu lá số" },
+  ];
+
+  return { overviewItems, tuoiConGiap };
+}
+
+const EASTERN_UPLOAD_OVERVIEW_HEADINGS = [
+  "Họ và tên",
+  "Ngày sinh dương lịch",
+  "Ngày sinh âm lịch",
+  "Giờ sinh",
+  "Giới tính",
+  "Năm xem",
+  "Âm dương",
+  "Bản mệnh",
+  "Cân lượng",
+  "Chủ mệnh",
+  "Chủ thân",
+  "Lai nhân cung",
+  "Cung hoàng đạo",
+  "Tuổi",
+] as const;
+
+const EASTERN_UPLOAD_TOPICS = [
+  { id: "menh-than", label: "Công danh sự nghiệp", target: "Cung Quan Lộc (Luận về công danh)" },
+  { id: "no-boc", label: "Anh em, bạn bè", target: "Cung Nô Bộc (Luận về bạn bè)" },
+  { id: "tu-tuc", label: "Con cái", target: "Cung Tử Tức (Luận về con cái)" },
+  { id: "phu-the", label: "Tình duyên", target: "Cung Phu Thê (Luận về vợ chồng)" },
+  { id: "phu-the-2", label: "Vợ chồng", target: "Cung Phu Thê (Luận về vợ chồng)" },
+  { id: "tai-bach", label: "Tài vận, kinh tế", target: "Cung Tài Bạch (Luận về tiền bạc)" },
+  { id: "tat-ach", label: "Sức khỏe, bệnh tật", target: "Cung Tật Ách (Luận về bệnh tật)" },
+  { id: "thien-di", label: "Xuất ngoại", target: "Cung Thiên Di (Luận về xuất hành)" },
+  { id: "no-boc-2", label: "Bằng hữu, đồng nghiệp", target: "Cung Nô Bộc (Luận về bạn bè)" },
+  { id: "phuc-duc", label: "Phúc khí tổ tiên", target: "Cung Phúc Đức (Luận về họ hàng)" },
+  { id: "phu-mau", label: "Cha mẹ", target: "Cung Phụ Mẫu (Luận về cha mẹ)" },
+  { id: "dien-trach", label: "Nhà cửa, đất đai", target: "Cung Điền Trạch (Luận về nhà đất)" },
+  { id: "menh", label: "Mệnh và Thân", target: "Cung Mệnh (Luận về con người)" },
+] as const;
+
+const EASTERN_UPLOAD_PALACE_TITLES = [
+  "Cung Mệnh (Luận về con người)",
+  "Cung Thân",
+  "Cung Quan Lộc (Luận về công danh)",
+  "Cung Tài Bạch (Luận về tiền bạc)",
+  "Cung Thiên Di (Luận về xuất hành)",
+  "Cung Phúc Đức (Luận về họ hàng)",
+  "Cung Phu Thê (Luận về vợ chồng)",
+  "Cung Điền Trạch (Luận về nhà đất)",
+  "Cung Tật Ách (Luận về bệnh tật)",
+  "Cung Phụ Mẫu (Luận về cha mẹ)",
+  "Cung Huynh Đệ (Luận về anh/chị/em)",
+  "Cung Tử Tức (Luận về con cái)",
+  "Cung Nô Bộc (Luận về bạn bè)",
+] as const;
+
+function normalizeDateVi(input: string | null): string | null {
+  if (!input) return null;
+  const s = input.trim();
+  if (!s) return null;
+  const m1 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m1) {
+    const dd = String(m1[3]).padStart(2, "0");
+    const mm = String(m1[2]).padStart(2, "0");
+    return `${dd}-${mm}-${m1[1]}`;
+  }
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m2) {
+    const dd = String(m2[1]).padStart(2, "0");
+    const mm = String(m2[2]).padStart(2, "0");
+    return `${dd}-${mm}-${m2[3]}`;
+  }
+  const m3 = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (m3) {
+    const dd = String(m3[1]).padStart(2, "0");
+    const mm = String(m3[2]).padStart(2, "0");
+    return `${dd}-${mm}-${m3[3]}`;
+  }
+  return s;
+}
+
+function normalizeTime(input: string | null): string | null {
+  if (!input) return null;
+  const s = input.trim();
+  if (!s) return null;
+  const m = s.match(/(\d{1,2})\s*[:hH]\s*(\d{1,2})/);
+  if (m) {
+    const hh = String(m[1]).padStart(2, "0");
+    const mm = String(m[2]).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+  return s;
+}
+
+function normalizeGenderVi(input: string | null): string | null {
+  if (!input) return null;
+  const s = input.trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower === "male" || lower.includes("nam") || lower.includes("man")) return "Nam";
+  if (lower === "female" || lower.includes("nữ") || lower.includes("nu") || lower.includes("woman")) return "Nữ";
+  return s;
+}
+
+function stripDiacriticsForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizeEasternUploadOverviewItems(
+  profile: ProfileContext | undefined,
+  parsed: Record<string, unknown>,
+  contextJson: unknown
+): Array<{ heading: string; text: string; source?: string; type?: string }> {
+  const raw = Array.isArray(parsed.overviewItems) ? (parsed.overviewItems as unknown[]) : [];
+  const map = new Map<string, { text: string; source?: string; type?: string }>();
+
+  const canonicalizeHeading = (heading: string): string => {
+    const key = stripDiacriticsForMatch(heading);
+    if (key.includes("can xuong") || key.includes("can luong")) return "Cân lượng";
+    if (key === "chu menh" || key.includes("chu menh")) return "Chủ mệnh";
+    if (key === "chu than" || key.includes("chu than")) return "Chủ thân";
+    if (key.includes("am duong") || key.includes("yin yang")) return "Âm dương";
+    if (key.includes("ban menh") || key === "menh") return "Bản mệnh";
+    if (key.includes("lai nhan cung")) return "Lai nhân cung";
+    if (key.includes("cung hoang dao") || key.includes("zodiac")) return "Cung hoàng đạo";
+    if (key.includes("nam xem") || key.includes("nam xem")) return "Năm xem";
+    if (key.includes("gioi tinh") || key.includes("gender")) return "Giới tính";
+    if (key.includes("ngay sinh duong")) return "Ngày sinh dương lịch";
+    if (key.includes("ngay sinh am")) return "Ngày sinh âm lịch";
+    if (key.includes("gio sinh") || key.includes("time")) return "Giờ sinh";
+    if (key.includes("ho va ten") || key.includes("full name") || key.includes("name")) return "Họ và tên";
+    if (key === "tuoi" || key.includes("age")) return "Tuổi";
+    return heading;
+  };
+
+  for (const item of raw) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const obj = item as Record<string, unknown>;
+    const heading = safeString(obj.heading) ?? null;
+    const text = safeString(obj.text) ?? null;
+    if (!heading || !text) continue;
+    map.set(canonicalizeHeading(heading), {
+      text,
+      source: safeString(obj.source) ?? undefined,
+      type: safeString(obj.type) ?? undefined,
+    });
+  }
+
+  const nowYear = new Date().getFullYear();
+  const birthYear = extractBirthYear(profile?.dateOfBirth ?? null);
+  const tuoi = birthYear ? nowYear - birthYear + 1 : null;
+  const namXem = `${getCanChiYearVi(nowYear)} (${nowYear})${typeof tuoi === "number" ? `, ${tuoi} tuổi` : ""}`;
+
+  const solarDob = normalizeDateVi(safeString(profile?.dateOfBirth)) ?? "Không có trong dữ liệu lá số";
+  const lunarDob = normalizeDateVi(safeString(profile?.lunarDateOfBirth)) ?? "Không có trong dữ liệu lá số";
+  const timeOfBirth = normalizeTime(safeString(profile?.timeOfBirth)) ?? "Không có trong dữ liệu lá số";
+  const gender = normalizeGenderVi(safeString(profile?.gender)) ?? "Không có trong dữ liệu lá số";
+
+  const westernZodiac = getWesternZodiacVi(profile?.dateOfBirth ?? null) ?? "Không có trong dữ liệu lá số";
+
+  const getOrMissing = (heading: (typeof EASTERN_UPLOAD_OVERVIEW_HEADINGS)[number]): string => {
+    const v = map.get(heading)?.text;
+    return v && v.trim() ? v : "Không có trong dữ liệu lá số";
+  };
+
+  return EASTERN_UPLOAD_OVERVIEW_HEADINGS.map((heading) => {
+    switch (heading) {
+      case "Họ và tên":
+        return { heading, text: safeString(profile?.fullName) ?? getOrMissing(heading) };
+      case "Ngày sinh dương lịch":
+        return { heading, text: solarDob };
+      case "Ngày sinh âm lịch":
+        return { heading, text: lunarDob };
+      case "Giờ sinh":
+        return { heading, text: timeOfBirth };
+      case "Giới tính":
+        return { heading, text: gender };
+      case "Năm xem":
+        return { heading, text: namXem };
+      case "Cung hoàng đạo":
+        return { heading, text: westernZodiac };
+      case "Tuổi":
+        return { heading, text: typeof tuoi === "number" ? `${tuoi} tuổi` : getOrMissing(heading) };
+      default:
+        return { heading, text: getOrMissing(heading) };
+    }
+  });
+}
+
+function normalizeEasternUploadPalaceSections(parsed: Record<string, unknown>) {
+  const raw = Array.isArray(parsed.palaceSections) ? (parsed.palaceSections as unknown[]) : [];
+  const byKey = new Map<string, { title: string; starAnalyses: unknown[]; summary: unknown[] }>();
+
+  for (const p of raw) {
+    if (!p || typeof p !== "object" || Array.isArray(p)) continue;
+    const obj = p as Record<string, unknown>;
+    const title = safeString(obj.title);
+    if (!title) continue;
+    const key = stripDiacriticsForMatch(title);
+    const starAnalyses = Array.isArray(obj.starAnalyses) ? (obj.starAnalyses as unknown[]) : [];
+    const summary = Array.isArray(obj.summary) ? (obj.summary as unknown[]) : [];
+    byKey.set(key, { title, starAnalyses, summary });
+  }
+
+  const normalizeStarAnalyses = (items: unknown[]) =>
+    items
+      .map((it) => {
+        if (!it || typeof it !== "object" || Array.isArray(it)) return null;
+        const o = it as Record<string, unknown>;
+        const text = safeString(o.text);
+        if (!text) return null;
+        return {
+          heading: safeString(o.heading) ?? undefined,
+          text,
+          source: safeString(o.source) ?? undefined,
+        };
+      })
+      .filter(Boolean);
+
+  const normalizeSummary = (items: unknown[]) =>
+    items
+      .map((it) => {
+        if (!it || typeof it !== "object" || Array.isArray(it)) return null;
+        const o = it as Record<string, unknown>;
+        const text = safeString(o.text);
+        if (!text) return null;
+        return {
+          text,
+          source: safeString(o.source) ?? undefined,
+          type: safeString(o.type) ?? undefined,
+        };
+      })
+      .filter(Boolean);
+
+  return EASTERN_UPLOAD_PALACE_TITLES.map((canonicalTitle) => {
+    const cKey = stripDiacriticsForMatch(canonicalTitle);
+    const hit = byKey.get(cKey);
+    // fallback: partial match (e.g. model outputs "Cung Mệnh" only)
+    const fallback =
+      hit ??
+      Array.from(byKey.entries()).find(([k]) => k.includes(stripDiacriticsForMatch(canonicalTitle.split("(")[0] ?? canonicalTitle)))?.[1];
+
+    return {
+      title: canonicalTitle,
+      starAnalyses: normalizeStarAnalyses(fallback?.starAnalyses ?? []),
+      summary: normalizeSummary(fallback?.summary ?? []),
+    };
+  });
+}
+
+function normalizeEasternUploadJson(
+  profile: ProfileContext | undefined,
+  parsed: Record<string, unknown>,
+  contextJson: unknown
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = { ...parsed };
+  normalized.overviewItems = normalizeEasternUploadOverviewItems(profile, parsed, contextJson);
+  normalized.palaceSections = normalizeEasternUploadPalaceSections(parsed);
+  normalized.topics = [...EASTERN_UPLOAD_TOPICS];
+  return normalized;
+}
+
+function looksNonEnglish(text: string): boolean {
+  // quick heuristic: Vietnamese diacritics or the word 'tuổi'
+  return /[\u00C0-\u024F\u1E00-\u1EFF]/.test(text) || /tuổi/i.test(text);
+}
+
+function sanitizePartnerSketchEnglish<T extends { [k: string]: unknown }>(partnerSketch: T | null): T | null {
+  if (!partnerSketch) return null;
+  const out = { ...partnerSketch } as Record<string, unknown>;
+
+  const sanitizeString = (v: unknown): string | null => {
+    if (typeof v !== "string") return null;
+    const s = v.trim();
+    if (!s) return null;
+    if (looksNonEnglish(s)) {
+      // allow a very small fix for ageRange
+      if (/\d+\s*-\s*\d+\s*tuổi/i.test(s)) return s.replace(/tuổi/gi, "years old");
+      return null;
+    }
+    return s;
+  };
+
+  out.ageRange = sanitizeString(out.ageRange) ?? out.ageRange;
+  out.overallVibe = sanitizeString(out.overallVibe) ?? out.overallVibe;
+  out.hair = sanitizeString(out.hair) ?? out.hair;
+  out.style = sanitizeString(out.style) ?? out.style;
+  out.setting = sanitizeString(out.setting) ?? out.setting;
+  out.colorPalette = sanitizeString(out.colorPalette) ?? out.colorPalette;
+  out.genderPresentation = sanitizeString(out.genderPresentation) ?? out.genderPresentation;
+
+  if (Array.isArray(out.facialFeatures)) {
+    const ff = (out.facialFeatures as unknown[])
+      .map((x) => (typeof x === "string" ? x.trim() : ""))
+      .filter(Boolean)
+      .filter((x) => !looksNonEnglish(x));
+    out.facialFeatures = ff.length ? ff : out.facialFeatures;
+  }
+
+  return out as T;
+}
+
 function buildProfileContext(profile?: ProfileContext, lang: "en" | "vi" = "en"): string {
   if (!profile) return "";
   if (lang === "vi") {
@@ -215,6 +667,7 @@ interface RequestBody {
     | "eastern_health"
     | "eastern_fortune"
     | "eastern_upload"
+    | "eastern_saved_chart"
     | "western"
     | "tarot"
     | "iching"
@@ -654,19 +1107,6 @@ serve(async (req: Request) => {
       responseFormat = "text",
     } = (await req.json()) as RequestBody;
 
-    if (image) {
-      console.log("📸 Image upload detected:", {
-        mimeType: image.mimeType,
-        dataLength: image.data.length,
-        module,
-        lang,
-        stream,
-        responseFormat,
-        hasProfile: !!profile,
-        profileName: profile?.fullName,
-      });
-    }
-
     if (module === "speech_to_text") {
       if (!audio?.data || !audio?.mimeType) {
         return new Response(JSON.stringify({ error: "Missing audio" }), {
@@ -699,43 +1139,184 @@ serve(async (req: Request) => {
     const resolvedModule = resolveModuleKey(normalizedModule, contextJson);
 
     if (resolvedModule === "eastern_image") {
-      const portrait = coerceInlineImage(images?.portrait);
-      const chart = coerceInlineImage(images?.chart) ?? (image ? { data: image.data, mimeType: image.mimeType } : null);
+      const ctxObj =
+        contextJson && typeof contextJson === "object" && !Array.isArray(contextJson)
+          ? (contextJson as Record<string, unknown>)
+          : null;
+      const ziweiChartJson = ctxObj ? ctxObj.ziweiChartJson : null;
+      if (!ziweiChartJson) {
+        return new Response(JSON.stringify({ error: "Missing ziweiChartJson" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-      const inputMode = portrait && chart ? "BOTH_PORTRAIT_AND_CHART" : portrait ? "PORTRAIT_ONLY" : chart ? "CHART_ONLY" : "NO_IMAGES";
+      const inputMode = "CHART_JSON_ONLY";
 
       const analysisSystemPrompt =
         lang === "vi"
-          ?
-              "Bạn là chuyên gia phân tích hình ảnh + OCR để trích xuất thuộc tính có cấu trúc. Nhiệm vụ: phân tích các ảnh được cung cấp (nếu có) để trích xuất dữ liệu phục vụ dựng chân dung minh hoạ NGƯỜI HÔN PHỐI.\n\nQUY TẮC:\n- Output CHỈ JSON, không kèm chữ ngoài JSON.\n- Không suy đoán danh tính. Không tạo PII (tên, địa chỉ, số điện thoại).\n- Nếu chữ trong ảnh khó đọc: vẫn phải trả về JSON đầy đủ, dùng null/[] và ghi notes.\n\nNếu có CHÂN DUNG (user): chỉ trích xuất thuộc tính thẩm mỹ tổng quan (không nhận dạng), ví dụ: vibe, phong cách, palette.\n\nNếu có LÁ SỐ TỬ VI: tập trung trích xuất tín hiệu liên quan CUNG PHU THÊ và các yếu tố giúp phác hoạ người hôn phối.\n- Ưu tiên: xác định ô/cung 'PHU THÊ' (hoặc chữ tương đương), các SAO nằm trong cung đó, và các chú thích liên quan.\n- Nếu có thể: ghi nhận cung xung chiếu/tam hợp với Phu Thê (chỉ nêu những gì nhìn thấy trên lá số).\n- QUAN TRỌNG: Lá số Tử Vi Việt Nam sẽ có người hôn phối là người Việt Nam/Đông Nam Á. Nếu lá số có tiếng Việt, ký hiệu Việt, hoặc bối cảnh Việt Nam, suy luận người hôn phối là người Việt.\n- Tuyệt đối KHÔNG kết luận định mệnh; chỉ rút ra gợi ý 'vibe/khí chất' trung tính để dựng chân dung minh hoạ.\n- BẮT BUỘC trả thêm confidence (0-1) cho các phần quan trọng, để downstream cân nhắc mức độ chắc chắn.\n\nJSON schema: { \"hasPortrait\": boolean, \"hasChart\": boolean, \"portraitInsights\": { \"genderPresentation\": string|null, \"ageRange\": string|null, \"overallVibe\": string|null, \"hair\": string|null, \"style\": string|null, \"colorPalette\": string|null }|null, \"chartInsights\": { \"chartType\": \"tu_vi\"|\"unknown\", \"phuThe\": { \"found\": boolean, \"confidence\": number, \"palaceLabel\": string|null, \"palaceLabelConfidence\": number, \"mainStars\": string[], \"mainStarsConfidence\": number, \"auxStars\": string[], \"auxStarsConfidence\": number, \"notes\": string|null }, \"relatedPalaces\": { \"tamHop\": string[], \"xungChieu\": string[], \"giapCung\": string[] }, \"spouseTraitHints\": { \"vibeKeywords\": string[], \"appearanceKeywords\": string[], \"styleKeywords\": string[], \"personalityKeywords\": string[], \"nationalityHint\": string|null }, \"ocrSnippets\": string[], \"notes\": string|null }|null }"
-          :
-              "You are an image analyst with OCR extracting structured attributes. Task: analyze the provided images (if any) to produce structured insights for generating a symbolic spouse/partner portrait.\n\nRULES:\n- Output STRICT JSON only.\n- Never infer identity. Never invent PII (name, address, phone).\n- If text is unreadable, still return the full JSON using null/[] and add notes.\n\nIf PORTRAIT is provided: extract high-level aesthetic attributes only (no identity), e.g. vibe, hair, style, palette.\n\nIf TU VI CHART is provided: focus on spouse-related signals, especially the PHU THE palace. Extract what you can see (labels, stars, notes). Do NOT make destiny claims; only neutral trait hints for portrait direction.\n- IMPORTANT: Vietnamese Tu Vi charts will have Vietnamese/Southeast Asian spouses. If chart has Vietnamese text, symbols, or context, infer spouse is Vietnamese.\n- MUST output confidence scores (0-1) for key extracted fields.\n\nJSON schema: { \"hasPortrait\": boolean, \"hasChart\": boolean, \"portraitInsights\": { \"genderPresentation\": string|null, \"ageRange\": string|null, \"overallVibe\": string|null, \"hair\": string|null, \"style\": string|null, \"colorPalette\": string|null }|null, \"chartInsights\": { \"chartType\": \"tu_vi\"|\"unknown\", \"phuThe\": { \"found\": boolean, \"confidence\": number, \"palaceLabel\": string|null, \"palaceLabelConfidence\": number, \"mainStars\": string[], \"mainStarsConfidence\": number, \"auxStars\": string[], \"auxStarsConfidence\": number, \"notes\": string|null }, \"relatedPalaces\": { \"tamHop\": string[], \"xungChieu\": string[], \"giapCung\": string[] }, \"spouseTraitHints\": { \"vibeKeywords\": string[], \"appearanceKeywords\": string[], \"styleKeywords\": string[], \"personalityKeywords\": string[], \"nationalityHint\": string|null }, \"ocrSnippets\": string[], \"notes\": string|null }|null }";
-      // NOTE: analysisSystemPrompt includes a JSON schema; keep it inline for Gemini.
+          ? `Bạn là chuyên gia phân tích DỮ LIỆU LÁ SỐ TỬ VI DẠNG JSON để trích xuất thuộc tính có cấu trúc phục vụ dựng chân dung minh hoạ NGƯỜI HÔN PHỐI (không định mệnh).
+
+NHIỆM VỤ:
+- Đọc ziweiChartJson (dữ liệu lá số do hệ thống sinh) và trích xuất tín hiệu liên quan CUNG PHU THÊ + các yếu tố phụ trợ (tam hợp, xung chiếu, giáp cung nếu có trong JSON).
+
+QUY TẮC:
+- Output CHỈ JSON, không kèm chữ ngoài JSON.
+- Không suy đoán danh tính. Không tạo PII (tên, địa chỉ, số điện thoại).
+- Nếu dữ kiện không có trong ziweiChartJson: vẫn phải trả về JSON đầy đủ, dùng null/[] và ghi notes.
+- Không kết luận định mệnh; chỉ rút ra gợi ý trung tính về khí chất/vibe/gu thẩm mỹ.
+- BẮT BUỘC trả thêm confidence (0-1) cho các phần quan trọng.
+
+DỮ LIỆU ĐẦU VÀO:
+- Bạn sẽ nhận ziweiChartJson trong phần user text/context. Hãy coi đó là nguồn dữ kiện lá số (authoritative).
+
+JSON schema (GIỮ NGUYÊN): { "hasPortrait": boolean, "hasChart": boolean, "portraitInsights": { "genderPresentation": string|null, "ageRange": string|null, "overallVibe": string|null, "hair": string|null, "style": string|null, "colorPalette": string|null }|null, "chartInsights": { "chartType": "tu_vi"|"unknown", "phuThe": { "found": boolean, "confidence": number, "palaceLabel": string|null, "palaceLabelConfidence": number, "mainStars": string[], "mainStarsConfidence": number, "auxStars": string[], "auxStarsConfidence": number, "notes": string|null }, "relatedPalaces": { "tamHop": string[], "xungChieu": string[], "giapCung": string[] }, "spouseTraitHints": { "vibeKeywords": string[], "appearanceKeywords": string[], "styleKeywords": string[], "personalityKeywords": string[], "nationalityHint": string|null }, "ocrSnippets": string[], "notes": string|null }|null }`
+          : `You analyze STRUCTURED TU VI CHART JSON to extract spouse-related signals for generating a symbolic partner portrait (non-fatalistic).
+
+TASK:
+- Read ziweiChartJson (system-generated structured chart data) and extract spouse/PHU THE palace signals plus related palaces (tam hop, xung chieu, giap cung) if present in the JSON.
+
+RULES:
+- Output STRICT JSON only.
+- Never infer identity. Never invent PII (name, address, phone).
+- If a fact is not present in ziweiChartJson, still return the full JSON using null/[] and add notes.
+- Do NOT make destiny claims; only neutral trait/vibe/style hints.
+- MUST output confidence scores (0-1) for key extracted fields.
+
+INPUT:
+- ziweiChartJson will be provided in user text/context. Treat it as authoritative chart facts.
+
+JSON schema (KEEP EXACTLY): { "hasPortrait": boolean, "hasChart": boolean, "portraitInsights": { "genderPresentation": string|null, "ageRange": string|null, "overallVibe": string|null, "hair": string|null, "style": string|null, "colorPalette": string|null }|null, "chartInsights": { "chartType": "tu_vi"|"unknown", "phuThe": { "found": boolean, "confidence": number, "palaceLabel": string|null, "palaceLabelConfidence": number, "mainStars": string[], "mainStarsConfidence": number, "auxStars": string[], "auxStarsConfidence": number, "notes": string|null }, "relatedPalaces": { "tamHop": string[], "xungChieu": string[], "giapCung": string[] }, "spouseTraitHints": { "vibeKeywords": string[], "appearanceKeywords": string[], "styleKeywords": string[], "personalityKeywords": string[], "nationalityHint": string|null }, "ocrSnippets": string[], "notes": string|null }|null }`;
 
       const sketchSystemPrompt =
         lang === "vi"
-          ?
-              "Bạn là chuyên gia luận giải phong cách và art director. Nhiệm vụ: dựa trên TOÀN BỘ thông tin người dùng (hồ sơ + ngữ cảnh) và kết quả phân tích ảnh (nếu có) để phác hoạ chân dung người hôn phối/đối tác theo hướng thực tế, không định mệnh.\n\nQUY TẮC:\n- Output CHỈ JSON.\n- MỌI đặc điểm (tuổi, quốc gia, phong cách, nét mặt) PHẢI được suy ra từ hồ sơ người dùng (tên, ngày/giờ/nơi sinh) và suy luận thời điểm kết hôn hợp lý. KHÔNG TỰ TẠO.\n- Quốc gia/khu vực PHẢI được suy từ ngữ cảnh lá số và dữ liệu người dùng: nếu người dùng ở nước ngoài hoặc lá số chỉ bối cảnh quốc tế, hãy phản ánh điều đó. KHÔNG mặc định Việt Nam/Đông Nam Á nếu không có bằng chứng.\n- KHÔNG ĐƯA TRANG SỨC, phụ kiện, hoặc đồ trang trí vào partnerSketch.\n- KHÔNG hardcode quốc gia/phong cách; mọi gợi ý phải đến từ input.\n- Không đưa PII (tên, ngày sinh đầy đủ, địa chỉ cụ thể) vào output.\n- Bắt buộc trả thêm \"compatibilityScore\" (0-100) + \"compatibilityRationaleVi\" giải thích ngắn gọn dựa trên input.\n- Bắt buộc trả thêm \"spousePortraitDirectionVi\": 3-6 câu mô tả hướng phát hoạ (dựa vào Cung Phu Thê / sao / tam hợp / xung chiếu nếu có), và nói rõ mức độ chắc chắn dựa trên confidence.\n\nCHUYỂN ĐỔI ÂM LỊCH:\n- Nếu người dùng cung cấp ngày sinh âm lịch, chuyển sang dương lịch để tính tuổi.\n- Chuyển giờ sinh sang Giờ Âm Lịch: Tý (23-1), Sửu (1-3), Dần (3-5), Mão (5-7), Thìn (7-9), Tỵ (9-11), Ngọ (11-13), Mùi (13-15), Thân (15-17), Dậu (17-19), Tuất (19-21), Hợi (21-23).\n- Dùng CAN (Thiên Can) và CHI (Địa Chi) của năm sinh để suy luận tính cách.\n\nCHÍNH XÁC TUỔI TÁC (CỰC KỲ QUAN TRỌNG):\n- Nếu khoảng tuổi 24-28, người phải trông rõ 24-28, KHÔNG già hơn.\n- Dùng ĐẶC ĐIỂM TRẺ: da mịn không nếp nhăn sâu, mắt sáng trong, đầy đặn tự nhiên, biểu cảm rạng rỡ.\n- TRÁNH: nếp nhăn sâu, đổ bóng đậm làm già mặt, biểu tác mệt mỏi, cấu trúc mặt trưởng thành.\n- Style bút chì graphite KHÔNG được làm cho nhân vật trông già hơn hoặc cổ xưa.\n\nQUAN TRỌNG: Dùng \"con gái\" thay vì \"phụ nữ\" để thân thiện hơn. Không dùng \"girl\".\n\nTRANG PHỤC: Đồ thường ngày gần gũi như áo thun, áo form rộng, đồ ở nhà thoải mái để tạo vẻ thân thiện, gần gũi.\n\nLUẬN SUY CHI TIẾT:\n- Dùng năm sinh người dùng + độ tuổi kết hôn điển hình để ước lượng tuổi người hôn phối tại thời điểm kết hôn có khả năng.\n- Suy luận thời điểm kết hôn từ tín hiệu lá số (cung Phu Thê, chu kỳ thuận lợi, transit).\n- Dùng tên, ngày sinh và văn hóa để suy luận quốc gia/khu vực dựa trên ngữ cảnh lá số và dữ liệu thực tế.\n- Dùng kết quả luận eastern trước đó để suy ra tính cách, thẩm mỹ, nghề nghiệp → ảnh hưởng ngoại hình và phong cách.\n- Nếu có tín hiệu hôn nhân từ lá số, chuyển thành đặc điểm ngoại hình/khí chất trung lập.\n\nJSON schema: {\n  \"partnerSketch\": {\n    \"genderPresentation\": string|null,\n    \"ageRange\": string|null,\n    \"style\": string|null,\n    \"overallVibe\": string|null,\n    \"facialFeatures\": string[],\n    \"hair\": string|null,\n    \"accessories\": string[], // Phải là mảng rỗng [] vì KHÔNG trang sức\n    \"setting\": string|null,\n    \"colorPalette\": string|null\n  },\n  \"compatibilityScore\": number,\n  \"compatibilityRationaleVi\": string,\n  \"spousePortraitDirectionVi\": string,\n  \"confidence\": number\n}"
-          :
-              "You are a style reasoning expert and art director. Task: use the full user info (profile + context) and any image analysis results to derive a grounded partner-portrait sketch (non-fatalistic).\n\nRULES:\n- Output STRICT JSON only.\n- EVERY feature (age, nationality, style, facial details) MUST be derived from user profile (name, DOB, time/place) and logical marriage timing inference. DO NOT invent attributes.\n- Nationality/region MUST be inferred from chart context and user data: if the user lives abroad or chart indicates international context, reflect that. Do NOT default to Vietnamese/Southeast Asian without evidence.\n- ABSOLUTELY NO jewelry, accessories, or decorative items in partnerSketch.\n- Do not hardcode locale/style; derive from input.\n- Do not include PII (name, full DOB, exact address).\n- Must return compatibilityScore (0-100) + short rationale.\n- Must return spousePortraitDirection: 3-6 sentences describing the portrait direction and confidence.\n\nLUNAR CALENDAR CONVERSION:\n- If user provides lunar birth date, convert to solar date for age calculation.\n- Convert birth time to lunar hour: Tý (23-1), Sửu (1-3), Dần (3-5), Mão (5-7), Thìn (7-9), Tỵ (9-11), Ngọ (11-13), Mùi (13-15), Thân (15-17), Dậu (17-19), Tuất (19-21), Hợi (21-23).\n- Use CAN (Thiên Can) and CHI (Địa Chi) of birth year for personality traits.\n\nAGE ACCURACY (CRITICAL):\n- If age range is 24-28, the person must look clearly 24-28, NOT older.\n- Use YOUTHFUL features: smooth skin without heavy lines, bright clear eyes, natural facial fullness, vibrant expression.\n- AVOID: deep wrinkles, heavy shading that ages the face, tired expressions, mature facial structures.\n- The graphite style should NOT make the subject appear older or vintage-looking.\n\nIMPORTANT: Use \"woman\" instead of \"young woman\" for age-appropriate language. Do not use \"girl\".\n\nWARDROBE: Casual everyday clothing like t-shirts, oversized shirts, comfortable home wear for a friendly, approachable look.\n\nINFERENCE LOGIC:\n- Use user's birth year + typical marriage age patterns to estimate spouse's age range at likely marriage time.\n- Infer marriage timing from chart signals (spouse palace, favorable periods, transits).\n- Use user's name, birth data, and cultural context to infer likely nationality/region based on chart context and actual data.\n- Extract personality, aesthetic, and vocational cues from prior eastern analysis results to shape spouse's appearance and style.\n- If chart provides spouse-related signals, translate them into neutral physical/vibe traits (not destiny).\n\nJSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: string|null, style: string|null, overallVibe: string|null, facialFeatures: string[], hair: string|null, accessories: string[] /* MUST be empty array - NO jewelry */, setting: string|null, colorPalette: string|null }, compatibilityScore: number, compatibilityRationale: string, spousePortraitDirection: string, confidence: number }";
+          ? `Bạn là chuyên gia luận giải phong cách và art director. Nhiệm vụ: dựa trên TOÀN BỘ thông tin người dùng (hồ sơ + ngữ cảnh) và kết quả phân tích ảnh (nếu có) để phác hoạ chân dung người hôn phối/đối tác theo hướng thực tế, không định mệnh.
+
+QUY TẮC:
+- Output CHỈ JSON.
+- MỌI đặc điểm (tuổi, quốc gia, phong cách, nét mặt) PHẢI được suy ra từ hồ sơ người dùng (tên, ngày/giờ/nơi sinh) và suy luận thời điểm kết hôn hợp lý. KHÔNG TỰ TẠO.
+- Quốc gia/khu vực PHẢI được suy từ ngữ cảnh lá số và dữ liệu người dùng: nếu người dùng ở nước ngoài hoặc lá số chỉ bối cảnh quốc tế, hãy phản ánh điều đó. KHÔNG mặc định Việt Nam/Đông Nam Á nếu không có bằng chứng.
+- KHÔNG ĐƯA TRANG SỨC, phụ kiện, hoặc đồ trang trí vào partnerSketch.
+- KHÔNG hardcode quốc gia/phong cách; mọi gợi ý phải đến từ input.
+- Không đưa PII (tên, ngày sinh đầy đủ, địa chỉ cụ thể) vào output.
+
+COMPATIBILITY SCORE (BẮT BUỘC):
+- Trả thêm "compatibilityScore" (0-100): phải suy ra từ tín hiệu lá số (Cung Phu Thê + tam hợp/xung chiếu/giáp cung + sao liên quan nếu có) và mức độ phù hợp tổng thể với hồ sơ người dùng. KHÔNG chấm điểm cảm tính.
+- Trả thêm "compatibilityRationaleVi": 1-3 câu giải thích ngắn gọn, nêu rõ dựa trên cung/sao nào.
+
+HƯỚNG PHÁC HOẠ (BẮT BUỘC):
+- Trả thêm "spousePortraitDirectionVi": 3-6 câu mô tả hướng phát hoạ dựa trên lá số. BẮT BUỘC phải nêu rõ Cung Phu Thê có sao nào (chính tinh/tạp tinh) và các cung liên quan (tam hợp, xung chiếu, giáp cung) đã định hình nên đặc điểm nào. Ví dụ: "Cung Phu Thê có Thiên Cơ và Thái Âm, tam hợp với Cung Phúc Đức có Thái Dương...".
+- TUYỆT ĐỐI KHÔNG ghi % hoặc câu kiểu "Mức độ chắc chắn là 75%" trong field này.
+- Độ chắc chắn chỉ được thể hiện bằng field "confidence" (number 0-1) theo schema, KHÔNG được đưa vào text.
+
+CHUYỂN ĐỔI ÂM LỊCH:
+- Nếu người dùng cung cấp ngày sinh âm lịch, chuyển sang dương lịch để tính tuổi.
+- Chuyển giờ sinh sang Giờ Âm Lịch: Tý (23-1), Sửu (1-3), Dần (3-5), Mão (5-7), Thìn (7-9), Tỵ (9-11), Ngọ (11-13), Mùi (13-15), Thân (15-17), Dậu (17-19), Tuất (19-21), Hợi (21-23).
+- Dùng CAN (Thiên Can) và CHI (Địa Chi) của năm sinh để suy luận tính cách.
+
+CHÍNH XÁC TUỔI TÁC (CỰC KỲ QUAN TRỌNG):
+- Nếu khoảng tuổi 24-28, người phải trông rõ 24-28, KHÔNG già hơn.
+- Dùng ĐẶC ĐIỂM TRẺ: da mịn không nếp nhăn sâu, mắt sáng trong, đầy đặn tự nhiên, biểu cảm rạng rỡ.
+- TRÁNH: nếp nhăn sâu, đổ bóng đậm làm già mặt, biểu tác mệt mỏi, cấu trúc mặt trưởng thành.
+- Style bút chì graphite KHÔNG được làm cho nhân vật trông già hơn hoặc cổ xưa.
+- Đặc biệt với đàn ông: tránh râu quai nón, ria mép, đường nét hằn sâu, trán cao hói, má hóp, quầng thâm mắt.
+- Đặc biệt với phụ nữ: tránh má hóp, xương gò má cao lộ, nếp nhăn khóe mắt, khóe miệng, da khô, lông mày nhạt.
+
+QUAN TRỌNG: Nhân vật là NGƯỜI TRƯỞNG THÀNH (phụ nữ/đàn ông), không dùng từ "con gái"/"trẻ con" và tránh mọi mô tả làm nhân vật trông già.
+
+TRANG PHỤC: Đồ thường ngày gần gũi như áo thun, áo form rộng, đồ ở nhà thoải mái để tạo vẻ thân thiện, gần gũi.
+
+LUẬN SUY CHI TIẾT:
+- Dùng năm sinh người dùng + độ tuổi kết hôn điển hình để ước lượng tuổi người hôn phối tại thời điểm kết hôn có khả năng.
+- Suy luận thời điểm kết hôn từ tín hiệu lá số (cung Phu Thê, chu kỳ thuận lợi, transit).
+- Dùng tên, ngày sinh và văn hóa để suy luận quốc gia/khu vực dựa trên ngữ cảnh lá số và dữ liệu thực tế.
+- Dùng kết quả luận eastern trước đó để suy ra tính cách, thẩm mỹ, nghề nghiệp → ảnh hưởng ngoại hình và phong cách.
+- Nếu có tín hiệu hôn nhân từ lá số, chuyển thành đặc điểm ngoại hình/khí chất trung lập.
+
+JSON schema: {
+  "partnerSketch": {
+    "genderPresentation": string|null,
+    "ageRange": string|null,
+    "style": string|null,
+    "overallVibe": string|null,
+    "facialFeatures": string[],
+    "hair": string|null,
+    "accessories": string[],
+    "setting": string|null,
+    "colorPalette": string|null
+  },
+  "compatibilityScore": number,
+  "compatibilityRationaleVi": string,
+  "spousePortraitDirectionVi": string,
+  "confidence": number
+}`
+          : `You are a style reasoning expert and art director. Task: use the full user info (profile + context) and any image analysis results to derive a grounded partner-portrait sketch (non-fatalistic).
+
+RULES:
+- Output STRICT JSON only.
+- EVERY feature (age, nationality, style, facial details) MUST be derived from user profile (name, DOB, time/place) and logical marriage timing inference. DO NOT invent attributes.
+- Nationality/region MUST be inferred from chart context and user data: if the user lives abroad or chart indicates international context, reflect that. Do NOT default to Vietnamese/Southeast Asian without evidence.
+- ABSOLUTELY NO jewelry, accessories, or decorative items in partnerSketch.
+- Do not hardcode locale/style; derive from input.
+- Do not include PII (name, full DOB, exact address).
+
+COMPATIBILITY SCORE (REQUIRED):
+- Must return compatibilityScore (0-100) computed from chart-based relationship signals (PHU THE palace + related palaces like tam hop / xung chieu / giap cung + relevant stars if present) and overall fit with the user's profile. Do NOT assign a gut-feel score.
+- Must return a short compatibility rationale (1-3 sentences) referencing which chart signals it is based on.
+
+PORTRAIT DIRECTION (REQUIRED):
+- Must return spousePortraitDirection: 3-6 sentences describing the portrait direction grounded in chart signals.
+- MUST explicitly reference which stars are in PHU THE palace (major/minor stars) and which related palaces (tam hop, xung chieu, giap cung) shape which traits. Example: "PHU THE palace contains Thien Co and Thai Am, tam hop with PHUC DUC palace containing Thai Duong...".
+- Do NOT append any explicit confidence percent (e.g., "Confidence: 75%") in this field.
+- Confidence must be expressed ONLY via the numeric field "confidence" (0-1) in the JSON schema, not inside free-text.
+
+- ALL free-text strings in the output MUST be ENGLISH. ageRange MUST be like "24-28 years old" (not "tuổi").
+
+LUNAR CALENDAR CONVERSION:
+- If user provides lunar birth date, convert to solar date for age calculation.
+- Convert birth time to lunar hour: Ty (23-1), Suu (1-3), Dan (3-5), Mao (5-7), Thin (7-9), Ty (9-11), Ngo (11-13), Mui (13-15), Than (15-17), Dau (17-19), Tuat (19-21), Hoi (21-23).
+- Use CAN (Heavenly Stem) and CHI (Earthly Branch) of birth year for personality traits.
+
+AGE ACCURACY (CRITICAL):
+- If age range is 24-28, the person must look clearly 24-28, NOT older.
+- Use YOUTHFUL features: smooth skin without heavy lines, bright clear eyes, natural facial fullness, vibrant expression.
+- AVOID: deep wrinkles, heavy shading that ages the face, tired expressions, mature facial structures, hollow cheeks, under-eye bags.
+- Avoid any vintage/old-photo look.
+- The graphite style should NOT make the subject appear older or antique.
+- For men: AVOID beard, stubble, deep facial lines, high forehead/balding, hollow cheeks, dark eye circles.
+- For women: AVOID hollow cheeks, prominent cheekbones, crow's feet, smile lines, dry skin, sparse eyebrows.
+
+IMPORTANT: Use "woman" instead of "young woman" for age-appropriate language. Do not use "girl".
+
+WARDROBE: Casual everyday clothing like t-shirts, oversized shirts, comfortable home wear for a friendly, approachable look.
+
+INFERENCE LOGIC:
+- Use user's birth year + typical marriage age patterns to estimate spouse's age range at likely marriage time.
+- Infer marriage timing from chart signals (spouse palace, favorable periods, transits).
+- Use user's name, birth data, and cultural context to infer likely nationality/region based on chart context and actual data.
+- Extract personality, aesthetic, and vocational cues from prior eastern analysis results to shape spouse's appearance and style.
+- If chart provides spouse-related signals, translate them into neutral physical/vibe traits (not destiny).
+
+JSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: string|null, style: string|null, overallVibe: string|null, facialFeatures: string[], hair: string|null, accessories: string[] /* MUST be empty array - NO jewelry */, setting: string|null, colorPalette: string|null }, compatibilityScore: number, compatibilityRationale: string, spousePortraitDirection: string, confidence: number }`;
 
       const profileForReasoning = `${buildProfileContext(profile, lang)}${buildImageAnalysisProfileContext(profile, lang)}`;
       const genericContext = buildGenericContext(contextJson, lang);
 
       const analysisParts = buildImagenParts(
         `${genericContext}${profileForReasoning}`.trim() ||
-          (lang === "vi" ? "Hãy phân tích ảnh theo schema JSON." : "Analyze the images per the JSON schema."),
-        portrait,
-        chart
+          (lang === "vi"
+            ? "Hãy phân tích dữ liệu lá số (JSON) theo schema JSON." 
+            : "Analyze the chart JSON per the JSON schema."),
+        null,
+        null
       );
 
-      const imageAnalysis =
-        portrait || chart ? await callGeminiJson(GEMINI_API_KEY, analysisSystemPrompt, analysisParts) : null;
+      const imageAnalysis = await callGeminiJson(GEMINI_API_KEY, analysisSystemPrompt, analysisParts);
 
       const sketchInput =
         lang === "vi"
-          ? `INPUT MODE: ${inputMode}\n\nNgữ cảnh đầy đủ (dùng để suy luận, không đưa PII vào prompt Imagen):\n${genericContext}${profileForReasoning}\n\nCHUYỂN ĐỔI ÂM LỊCH:\n- Nếu người dùng cung cấp ngày sinh âm lịch, chuyển sang dương lịch để tính tuổi.\n- Chuyển giờ sinh sang Giờ Âm Lịch: Tý (23-1), Sửu (1-3), Dần (3-5), Mão (5-7), Thìn (7-9), Tỵ (9-11), Ngọ (11-13), Mùi (13-15), Thân (15-17), Dậu (17-19), Tuất (19-21), Hợi (21-23).\n- Dùng CAN (Thiên Can) và CHI (Địa Chi) của năm sinh để suy luận tính cách.\n\nLUẬN SUY CHI TIẾT:\n- Dùng năm sinh người dùng + độ tuổi kết hôn điển hình để ước lượng tuổi người hôn phối tại thời điểm kết hôn có khả năng.\n- Suy luận thời điểm kết hôn từ tín hiệu lá số (cung Phu Thê, chu kỳ thuận lợi, transit).\n- Dùng tên, ngày sinh và văn hóa để suy luận quốc gia/khu vực dựa trên ngữ cảnh lá số và dữ liệu thực tế (nếu người dùng ở nước ngoài, phản ánh điều đó).\n- Dùng kết quả luận eastern trước đó để suy ra tính cách, thẩm mỹ, nghề nghiệp → ảnh hưởng ngoại hình và phong cách.\n- Nếu có tín hiệu hôn nhân từ lá số, chuyển thành đặc điểm ngoại hình/khí chất trung lập.\n\nQUAN TRỌNG: KHÔNG ĐƯA TRANG SỨC, phụ kiện, hoặc đồ trang trí vào partnerSketch. Phải là mảng rỗng [].\n\nCHÍNH XÁC TUỔI TÁC: Nếu khoảng tuổi 25-30, người phải trông rõ 25-30, không già hơn. Dùng đặc điểm gương mặt phù hợp tuổi.\n\nNguồn tham chiếu: Khi diễn giải sao/cung (đặc biệt cung Phu Thê), ưu tiên tra cứu theo sách "Tử Vi Đẩu Số Toàn Thư" và ghi nhận theo phong cách thận trọng (nếu không chắc, nói rõ).\n\nKết quả phân tích ảnh (nếu có):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(không có ảnh)"}\n\nYêu cầu: tạo partnerSketch + compatibilityScore theo schema. Nhấn mạnh style minh hoạ: chân dung bút chì (graphite), nền giấy cổ điển/giấy ngà có texture, ánh sáng mềm, cảm giác trang sách/giấy vẽ cổ điển (không cổ trang). MỌI đặc điểm phải dựa trên dữ liệu người dùng.`
-          : `INPUT MODE: ${inputMode}\n\nFull context (for reasoning; do not put PII into Imagen prompt):\n${genericContext}${profileForReasoning}\n\nLUNAR CALENDAR CONVERSION:\n- If user provides lunar birth date, convert to solar date for age calculation.\n- Convert birth time to lunar hour: Tý (23-1), Sửu (1-3), Dần (3-5), Mão (5-7), Thìn (7-9), Tỵ (9-11), Ngọ (11-13), Mùi (13-15), Thân (15-17), Dậu (17-19), Tuất (19-21), Hợi (21-23).\n- Use CAN (Thiên Can) and CHI (Địa Chi) of birth year for personality traits.\n\nINFERENCE LOGIC:\n- Use user's birth year + typical marriage age patterns to estimate spouse's age range at likely marriage time.\n- Infer marriage timing from chart signals (spouse palace, favorable periods, transits).\n- Use user's name, birth data, and cultural context to infer likely nationality/region based on chart context and actual data (if user lives abroad, reflect that).\n- Extract personality, aesthetic, and vocational cues from prior eastern analysis results to shape spouse's appearance and style.\n- If chart provides spouse-related signals, translate them into neutral physical/vibe traits (not destiny).\n\nCRITICAL: ABSOLUTELY NO jewelry, accessories, or decorative items in partnerSketch. Must be empty array [].\n\nAGE ACCURACY: If age range is 25-30, the person must look clearly 25-30, not older. Use age-appropriate facial features.\n\nReference: when interpreting stars/palaces (especially spouse/Phu The signals), prioritize classical Tu Vi sources (e.g. Tu Vi Dau So Toan Thu). Be cautious; if uncertain, say so.\n\nImage analysis (if any):\n${imageAnalysis ? JSON.stringify(imageAnalysis) : "(no images)"}\n\nRequirement: create partnerSketch + compatibilityScore per schema. Emphasize illustration direction: graphite pencil portrait on vintage paper background with visible paper grain; soft lighting; modern subject (no historical costume). EVERY feature must be derived from user data.`;
+          ? `INPUT MODE: ${inputMode}\n\nNgữ cảnh đầy đủ (dùng để suy luận, không đưa PII vào prompt Imagen):\n${genericContext}${profileForReasoning}\n\nDỮ LIỆU LÁ SỐ (ZIWEI JSON):\n${JSON.stringify(ziweiChartJson)}\n\nPHÂN TÍCH (JSON):\n${JSON.stringify(imageAnalysis)}\n\nYêu cầu: tạo partnerSketch + compatibilityScore theo schema. Giữ phong cách bút chì graphite trên nền giấy có vân; ánh sáng mềm; nhân vật hiện đại (không cổ trang). Mọi đặc điểm phải có căn cứ từ hồ sơ + dữ liệu lá số.`
+          : `INPUT MODE: ${inputMode}\n\nFull context (for reasoning; do not put PII into Imagen prompt):\n${genericContext}${profileForReasoning}\n\nCHART DATA (ZIWEI JSON):\n${JSON.stringify(ziweiChartJson)}\n\nANALYSIS (JSON):\n${JSON.stringify(imageAnalysis)}\n\nRequirement: create partnerSketch + compatibilityScore per schema. Keep graphite pencil portrait style on paper grain background; soft lighting; modern subject (no historical costume). Every attribute must be grounded in the provided profile + chart JSON.`;
 
       const sketchJson = await callGeminiJson(GEMINI_API_KEY, sketchSystemPrompt, [{ text: sketchInput }]);
       const sketchObj = sketchJson as {
@@ -772,57 +1353,90 @@ serve(async (req: Request) => {
             : null;
 
       const partnerSketch = coercePartnerSketch(sketchObj.partnerSketch);
+      const partnerSketchForPrompt = lang === "en" ? sanitizePartnerSketchEnglish(partnerSketch) : partnerSketch;
       const partnerSketchText = sketchObj.partnerSketch ? JSON.stringify(sketchObj.partnerSketch) : "{}";
 
-      const systemPrompt = getSystemPrompt(lang, resolvedModule, "json");
       const imagenProfileContext = buildImagenProfileContext(profile, lang);
       const preface = `${genericContext}${imagenProfileContext}`.trim();
 
       const fixedStyleLineEn =
-        "STYLE: hand-drawn graphite pencil portrait, clean modern linework, visible pencil strokes, subtle graphite shading, monochrome graphite with a very faint sepia hint, on clean ivory sketchbook paper texture with visible grain, soft studio lighting. The person must have distinctly Vietnamese/Southeast Asian facial features and appearance.";
+        "STYLE: hand-drawn graphite pencil portrait, clean modern linework, visible pencil strokes, subtle graphite shading, monochrome graphite with a very faint sepia hint, on clean ivory sketchbook paper texture with visible grain, soft studio lighting.";
       const fixedStyleLineVi =
-        "PHONG CÁCH (CỐ ĐỊNH): chân dung bút chì graphite vẽ tay, nét sạch hiện đại, thấy rõ nét bút chì, đổ bóng graphite nhẹ, đơn sắc graphite pha sepia cực nhẹ, nền giấy ngà sạch có vân như trang sổ phác thảo, ánh sáng studio mềm. Nhân vật phải có nét mặt và ngoại hình đặc trưng người Việt/Đông Nam Á.";
+        "PHONG CÁCH (CỐ ĐỊNH): chân dung bút chì graphite vẽ tay, nét sạch hiện đại, thấy rõ nét bút chì, đổ bóng graphite nhẹ, đơn sắc graphite pha sepia cực nhẹ, nền giấy ngà sạch có vân như trang sổ phác thảo, ánh sáng studio mềm.";
 
       const locale = inferLocaleFromPlace(profile?.placeOfBirth);
-      const nationalityFallbackEn = locale ? `Geographic context: ${locale}.` : "Geographic context: Vietnam.";
-      const nationalityFallbackVi = locale ? `Bối cảnh địa lý: ${locale}.` : "Bối cảnh địa lý: Việt Nam.";
+      const geographyEn = locale ? `Geographic context: ${locale}.` : "Geographic context: Vietnam.";
+      const geographyVi = locale ? `Bối cảnh địa lý: ${locale}.` : "Bối cảnh địa lý: Việt Nam.";
 
-      const partnerDetailsEn = partnerSketch
-        ? `Partner sketch constraints (must match): ageRange=${partnerSketch.ageRange ?? "(unknown)"}; vibe=${partnerSketch.overallVibe ?? "(unknown)"}; style=${partnerSketch.style ?? "(unknown)"}; hair=${partnerSketch.hair ?? "(unknown)"}; facialFeatures=${(partnerSketch.facialFeatures ?? []).join(", ")}.`
+      const fullNameRaw = String(profile?.fullName ?? "");
+      const placeRaw = String(profile?.placeOfBirth ?? "");
+      const localeRaw = String(locale ?? "");
+      const isLikelyVietnamese =
+        /việt\s*nam|vietnam/i.test(placeRaw + " " + localeRaw) ||
+        /thành\s*phố|tỉnh|huyện|xã|quận|phường|thị\s*trấn|tp\.?\s*/i.test(placeRaw) ||
+        /[\u00C0-\u024F\u1E00-\u1EFF]/.test(fullNameRaw);
+
+      const userGenderRaw = String(profile?.gender ?? "").toLowerCase();
+      const genderTokens = userGenderRaw
+        .replace(/[^a-z\u00C0-\u024F\u1E00-\u1EFF]+/gi, " ")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const hasToken = (value: string) => genderTokens.includes(value);
+
+      // Note: do NOT use substring checks like includes("male") because "female" contains "male".
+      const isMaleUser = hasToken("nam") || hasToken("male") || hasToken("man");
+      const isFemaleUser = hasToken("nữ") || hasToken("nu") || hasToken("female") || hasToken("woman");
+
+      const spouseGenderEn = isMaleUser ? "woman" : isFemaleUser ? "man" : "adult";
+      const spouseGenderVi = spouseGenderEn === "woman" ? "phụ nữ" : spouseGenderEn === "man" ? "đàn ông" : "người trưởng thành";
+
+      const genderEnforcementEn =
+        spouseGenderEn === "adult"
+          ? "SUBJECT GENDER: adult."
+          : `SUBJECT GENDER: MUST be a ${spouseGenderEn === "woman" ? "girl" : spouseGenderEn === "man" ? "boy" : "adult"}. Do NOT generate the opposite gender. CRITICAL: if user is female, generate a MALE subject; if user is male, generate a FEMALE subject.`;
+      const genderEnforcementVi =
+        spouseGenderEn === "adult"
+          ? "GIỚI TÍNH NHÂN VẬT: người trưởng thành."
+          : `GIỚI TÍNH NHÂN VẬT: BẮT BUỘC là ${spouseGenderVi}. TUYỆT ĐỐI KHÔNG tạo giới tính ngược lại. QUAN TRỌNG: nếu người dùng là nữ, phải tạo ĐỐNG TÁC nam; nếu người dùng là nam, phải tạo ĐỐNG TÁC nữ.`;
+
+      const partnerDetailsEn = partnerSketchForPrompt
+        ? `Partner sketch constraints (must match): ageRange=${partnerSketchForPrompt.ageRange ?? "(unknown)"}; vibe=${partnerSketchForPrompt.overallVibe ?? "(unknown)"}; style=${partnerSketchForPrompt.style ?? "(unknown)"}; hair=${partnerSketchForPrompt.hair ?? "(unknown)"}; facialFeatures=${(partnerSketchForPrompt.facialFeatures ?? []).join(", ")}.`
         : "Partner sketch constraints (must match): (not provided).";
       const partnerDetailsVi = partnerSketch
         ? `Ràng buộc từ partnerSketch (phải khớp): ageRange=${partnerSketch.ageRange ?? "(không có)"}; vibe=${partnerSketch.overallVibe ?? "(không có)"}; style=${partnerSketch.style ?? "(không có)"}; hair=${partnerSketch.hair ?? "(không có)"}; facialFeatures=${(partnerSketch.facialFeatures ?? []).join(", ")}.`
         : "Ràng buộc từ partnerSketch (phải khớp): (không có).";
 
       const ageEnforcementEn =
-        "AGE ENFORCEMENT: the face must look clearly within the stated age range; youthful markers only (smooth unlined skin, no visible crow's-feet, no deep nasolabial folds, bright clear eyes, relaxed jaw/neck); avoid any mature/aged look.";
+        "AGE ENFORCEMENT (CRITICAL): the face must look clearly within the stated age range (do NOT look older). Youthful markers only: smooth unlined skin, no crow's-feet, no deep nasolabial folds, no forehead lines, no marionette lines, no under-eye bags, no hollow cheeks, no sharp mature jawline, bright clear eyes, soft youthful facial fullness, relaxed youthful neck. Lighting must be soft and flattering. Avoid any vintage/old-photo look. Make the subject look fresh, energetic, and clearly young. For men: NO beard/stubble, no deep facial lines, no balding/high forehead, no hollow cheeks, no dark eye circles. For women: NO hollow cheeks, NO prominent cheekbones, NO crow's feet, NO smile lines, NO dry skin, NO sparse eyebrows.";
       const ageEnforcementVi =
-        "ÉP TUỔI (BẮT BUỘC): gương mặt phải trông rõ đúng khoảng tuổi; chỉ dùng dấu hiệu trẻ (da mịn không nếp nhăn, không vết chân chim, không rãnh mũi-má sâu, mắt sáng trong, cổ/hàm trẻ); tránh mọi dấu hiệu già.";
+        "ÉP TUỔI (BẮT BUỘC): gương mặt phải trông rõ đúng khoảng tuổi; chỉ dùng dấu hiệu trẻ (da mịn không nếp nhăn, không vết chân chim, không rãnh mũi-má sâu, mắt sáng trong, cổ/hàm trẻ); tránh mọi dấu hiệu già. Đặc biệt đàn ông: KHÔNG râu quai nón, KHÔNG ria mép, KHÔNG đường nét hằn sâu, KHÔNG trán cao/hói, KHÔNG má hóp, KHÔNG quầng thâm mắt. Đặc biệt phụ nữ: KHÔNG má hóp, KHÔNG xương gò má cao lộ, KHÔNG nếp nhăn khóe mắt/khoe miệng, KHÔNG da khô, KHÔNG lông mày nhạt.";
 
-      const finalPrompt =
-        lang === "vi"
-          ? `${preface}\n\nINPUT MODE: ${inputMode}\n\nStyle direction (must follow): graphite pencil portrait, hand-drawn pencil strokes, monochrome/soft sepia, vintage paper background (aged ivory paper texture), subtle paper grain, clean modern adult look, CASUAL EVERYDAY clothing like t-shirts and oversized shirts for a friendly, approachable look, no historical costume.\n\nIMPORTANT: Every facial feature, age, style, and demographic detail MUST be derived from the user's profile (name, date/time/place of birth) and logical marriage timing inference. DO NOT invent attributes.\n\nCRITICAL: ABSOLUTELY NO jewelry, watches, accessories, or decorative items. The person must look age-appropriate (if 24-28, must look 24-28, not older).\n\nNationality MUST be based on chart context and user data, not assumed.\n\nSTYLE ENFORCEMENT: This MUST be a graphite pencil drawing, NOT a photograph or digital painting. Emphasize pencil strokes, shading, and paper texture.\n\nAGE ACCURACY (CRITICAL): Use YOUTHFUL features - smooth skin without heavy lines, bright clear eyes, natural facial fullness, vibrant expression. AVOID: deep wrinkles, heavy shading that ages the face, tired expressions, mature facial structures. The graphite style must preserve youthfulness, not create an aged appearance.\n\nAGE LANGUAGE: Use "con gái" not "phụ nữ" for a friendly, approachable tone.\n\n${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`
-          : `INPUT MODE: ${inputMode}\n\nStyle direction (must follow): graphite pencil portrait, hand-drawn pencil strokes, monochrome/soft sepia, vintage paper background (aged ivory paper texture), subtle paper grain, clean modern adult look, CASUAL EVERYDAY clothing like t-shirts and oversized shirts for a friendly, approachable look, no historical costume.\n\nIMPORTANT: Every facial feature, age, style, and demographic detail MUST be derived from the user's profile (name, date/time/place of birth) and logical marriage timing inference. DO NOT invent attributes.\n\nCRITICAL: ABSOLUTELY NO jewelry, watches, accessories, or decorative items. The person must look age-appropriate (if 24-28, must look 24-28, not older).\n\nNationality MUST be based on chart context and user data, not assumed.\n\nSTYLE ENFORCEMENT: This MUST be a graphite pencil drawing, NOT a photograph or digital painting. Emphasize pencil strokes, shading, and paper texture.\n\nAGE ACCURACY (CRITICAL): Use YOUTHFUL features - smooth skin without heavy lines, bright clear eyes, natural facial fullness, vibrant expression. AVOID: deep wrinkles, heavy shading that ages the face, tired expressions, mature facial structures. The graphite style must preserve youthfulness, not create an aged appearance.\n\nAGE LANGUAGE: Use "woman" not "young woman" for age-appropriate description.\n\n${partnerSketchText}\n\nPlease produce the JSON for the Imagen prompt now.`;
+      const forcedSubjectEnBase = spouseGenderEn === "woman" ? "a girl" : spouseGenderEn === "man" ? "a boy" : "an adult";
+      const forcedSubjectEn =
+        isLikelyVietnamese && forcedSubjectEnBase !== "an adult" ? forcedSubjectEnBase.replace("a ", "a Vietnamese ") : forcedSubjectEnBase;
+      const forcedSubjectVi = spouseGenderEn === "woman" ? "cô gái" : spouseGenderEn === "man" ? "cậu bé" : "người trưởng thành";
 
-      const promptObj = await callGeminiJson(GEMINI_API_KEY, systemPrompt, [{ text: finalPrompt }]) as {
-        imagenPrompt?: unknown;
-        imagenPromptVi?: unknown;
-        aspectRatio?: unknown;
-        personGeneration?: unknown;
+      const baseSubjectEn =
+        `A graphite pencil portrait of ${forcedSubjectEn}, ${partnerSketchForPrompt?.ageRange ?? partnerSketch?.ageRange ?? "(age unknown)"}, ` +
+        `with ${partnerSketchForPrompt?.overallVibe ?? partnerSketch?.overallVibe ?? "a calm and approachable vibe"}. ` +
+        `Hair: ${partnerSketchForPrompt?.hair ?? partnerSketch?.hair ?? "(unspecified)"}. ` +
+        `Style: ${partnerSketchForPrompt?.style ?? partnerSketch?.style ?? "casual everyday clothing like a t-shirt or oversized shirt"}. ` +
+        `Facial features: ${(partnerSketchForPrompt?.facialFeatures ?? partnerSketch?.facialFeatures ?? []).join(", ") || "(unspecified)"}.`;
+
+      const hardNegativesEn =
+        "No jewelry, no watches, no accessories, no decorative items. No hanfu/kimono/ancient costume, no fantasy armor, no royal palace, no ancient setting, no traditional ceremonial outfit. No sexual content, no minors. No tired or mature expressions. No heavy shading that makes the subject look older. Avoid harsh contrast, avoid dramatic chiaroscuro, avoid film-grain, avoid sepia/vintage portrait styling. Avoid deep cheek shadows, avoid prominent nasolabial folds, avoid gaunt face, avoid adult-middle-aged look. NO beard/stubble/shadow, NO deep facial lines, NO balding/high forehead, NO hollow cheeks, NO dark eye circles, NO prominent cheekbones, NO crow's feet, NO smile lines.";
+
+      const imagenPromptRaw = `${baseSubjectEn}\n${hardNegativesEn}`;
+      const imagenPromptVi = `${fixedStyleLineVi} ${geographyVi} ${genderEnforcementVi} ${ageEnforcementVi}\n${partnerDetailsVi}\nChân dung bút chì graphite của ${forcedSubjectVi}, ${partnerSketch?.ageRange ?? "(không rõ tuổi)"}. Tuyệt đối không trang sức/phụ kiện. Giữ nét trẻ trung đúng độ tuổi. QUAN TRỌNG: Nếu người dùng là nữ, phải vẽ ĐỐNG TÁC NAM; nếu người dùng là nam, phải vẽ ĐỐNG TÁC NỮ.`;
+
+      const promptObj = {
+        aspectRatio: "1:1",
+        personGeneration: "allow_adult",
       };
 
-      const imagenPromptRaw = typeof promptObj.imagenPrompt === "string" ? promptObj.imagenPrompt.trim() : "";
-      if (!imagenPromptRaw) throw new Error("Missing imagenPrompt");
-
-      const imagenPromptVi =
-        typeof promptObj.imagenPromptVi === "string" && promptObj.imagenPromptVi.trim().length > 0
-          ? promptObj.imagenPromptVi.trim()
-          : null;
-
-      const imagenPrompt = `${fixedStyleLineEn} ${nationalityFallbackEn} ${ageEnforcementEn}\n${partnerDetailsEn}\n${imagenPromptRaw}`;
-      const imagenPromptViFinal = imagenPromptVi
-        ? `${fixedStyleLineVi} ${nationalityFallbackVi} ${ageEnforcementVi}\n${partnerDetailsVi}\n${imagenPromptVi}`
-        : null;
+      const imagenPrompt = `${fixedStyleLineEn} ${geographyEn} ${genderEnforcementEn} ${ageEnforcementEn}\n${partnerDetailsEn}\n${imagenPromptRaw}. CRITICAL: if user is female, generate a MALE subject; if user is male, generate a FEMALE subject.`;
+      const imagenPromptViFinal = imagenPromptVi || null;
 
       const imagesOut = await generateImagenImages(GEMINI_API_KEY, imagenPrompt, {
         sampleCount: 1,
@@ -854,7 +1468,11 @@ serve(async (req: Request) => {
       });
     }
 
-    const systemPrompt = getSystemPrompt(lang, resolvedModule, responseFormat);
+    const baseSystemPrompt = getSystemPrompt(lang, resolvedModule, responseFormat);
+    const systemPrompt =
+      resolvedModule === "eastern_upload"
+        ? `${baseSystemPrompt}${getEasternUploadSystemMarker(contextJson, lang)}`
+        : baseSystemPrompt;
     const userContext = buildUserContext(context, lang);
     const genericContext = buildGenericContext(contextJson, lang);
     const profileContext = buildProfileContext(profile, lang);
@@ -895,15 +1513,6 @@ serve(async (req: Request) => {
       ...(Object.keys(generationConfig).length > 0 ? { generationConfig } : {}),
     };
 
-    console.log("Gemini request:", {
-      url,
-      stream,
-      responseFormat,
-      module: resolvedModule,
-      hasImage: !!image,
-      contentsCount: contents.length,
-    });
-
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -911,13 +1520,6 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify(payload),
     });
-
-    console.log("Gemini response status:", response.status);
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Gemini API error:", response.status, errorData);
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
 
     if (stream) {
       const encoder = new TextEncoder();
@@ -930,7 +1532,6 @@ serve(async (req: Request) => {
       const streamResponse = new ReadableStream({
         async start(controller) {
           const responseText = await new Response(body).text();
-          console.log("Gemini stream response:", responseText);
           const items = JSON.parse(responseText) as Array<{
             candidates?: Array<{
               content?: { parts?: Array<{ text?: string }> };
@@ -939,7 +1540,6 @@ serve(async (req: Request) => {
           for (const item of items) {
             const text = item.candidates?.[0]?.content?.parts?.[0]?.text;
             if (text) {
-              console.log("Extracted text:", text);
               const words = text.split(" ");
               for (const word of words) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: word + " " })}\n\n`));
@@ -965,6 +1565,27 @@ serve(async (req: Request) => {
 
     const data = await response.json();
     const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    if (!stream && responseFormat === "json" && resolvedModule === "eastern_upload") {
+      try {
+        const parsed = JSON.parse(stripJsonFences(String(generatedText))) as Record<string, unknown>;
+        const normalized = normalizeEasternUploadJson(profile, parsed, contextJson);
+        return new Response(
+          JSON.stringify({
+            response: JSON.stringify(normalized),
+            disclaimer:
+              lang === "vi"
+                ? "Nội dung này chỉ dành cho mục đích tự hiểu bản thân và phản chiếu."
+                : "This content is for self-understanding and reflection purposes only.",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      } catch (err) {
+        console.error("Failed to normalize eastern_upload JSON response:", err);
+      }
+    }
 
     return new Response(
       JSON.stringify({

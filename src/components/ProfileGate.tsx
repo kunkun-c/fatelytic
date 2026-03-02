@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -12,6 +12,10 @@ import { Loader2 } from "@/components/ui/icons";
 import { getStoredProfile, setStoredProfile, type UserProfile } from "@/lib/profile";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
+import { astro } from "iztro";
+import html2canvas from "html2canvas";
+import { Iztrolabe } from "react-iztro";
+import type { Json } from "@/integrations/supabase/types";
 
 interface ProfileGateProps {
   children?: React.ReactNode;
@@ -22,6 +26,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
   const { user, loading } = useAuth();
   const location = useLocation();
   const { t, lang } = useI18n();
+  const chartCaptureRef = useRef<HTMLDivElement | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fullName, setFullName] = useState("");
   const [day, setDay] = useState("");
@@ -71,7 +76,9 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("full_name,date_of_birth,lunar_date_of_birth,time_of_birth,place_of_birth,gender")
+          .select(
+            "full_name,date_of_birth,lunar_date_of_birth,time_of_birth,place_of_birth,gender,ziwei_chart_json,ziwei_chart_image_url"
+          )
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -83,6 +90,8 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
             timeOfBirth: data.time_of_birth ?? undefined,
             placeOfBirth: data.place_of_birth,
             gender: data.gender ?? undefined,
+            ziweiChartJson: (data as unknown as { ziwei_chart_json?: unknown }).ziwei_chart_json,
+            ziweiChartImageUrl: (data as unknown as { ziwei_chart_image_url?: string | null }).ziwei_chart_image_url ?? undefined,
           };
           const [storedYear, storedMonth, storedDay] = nextProfile.dateOfBirth.split("-");
           setStoredProfile(nextProfile);
@@ -240,19 +249,129 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
       gender: gender || undefined,
     };
 
-    setStoredProfile(nextProfile);
-    setProfile(nextProfile);
+    const getChineseHourIndexFromTime = (value?: string) => {
+      if (!value) return 0;
+      const hourStr = value.split(":")[0];
+      const hour = Number(hourStr);
+      if (!Number.isFinite(hour)) return 0;
+      if (hour >= 23 || hour < 1) return 0;
+      if (hour >= 1 && hour < 3) return 1;
+      if (hour >= 3 && hour < 5) return 2;
+      if (hour >= 5 && hour < 7) return 3;
+      if (hour >= 7 && hour < 9) return 4;
+      if (hour >= 9 && hour < 11) return 5;
+      if (hour >= 11 && hour < 13) return 6;
+      if (hour >= 13 && hour < 15) return 7;
+      if (hour >= 15 && hour < 17) return 8;
+      if (hour >= 17 && hour < 19) return 9;
+      if (hour >= 19 && hour < 21) return 10;
+      return 11;
+    };
+
+    const getIztroGender = (value?: string) => {
+      const normalized = (value ?? "").toLowerCase();
+      if (normalized.includes("female") || normalized.includes("nữ") || normalized.includes("nu")) return "female" as const;
+      return "male" as const;
+    };
+
+    const createZiweiChart = () => {
+      try {
+        const timeIndex = getChineseHourIndexFromTime(nextProfile.timeOfBirth);
+        const izGender = getIztroGender(nextProfile.gender);
+        return astro.astrolabeBySolarDate(nextProfile.dateOfBirth, timeIndex, izGender, true, "zh-CN");
+      } catch (err) {
+        console.error("Failed to create Zi Wei chart:", err);
+        return null;
+      }
+    };
+
+    const captureChartImageAndUpload = async (): Promise<string | null> => {
+      if (!chartCaptureRef.current) return null;
+      const timeIndex = getChineseHourIndexFromTime(nextProfile.timeOfBirth);
+      const izGender = getIztroGender(nextProfile.gender);
+      try {
+        await new Promise((r) => window.setTimeout(r, 200));
+
+        const node = chartCaptureRef.current.firstElementChild as HTMLElement | null;
+        if (!node) return null;
+
+        const clone = node.cloneNode(true) as HTMLElement;
+        clone.style.transform = "scale(1)";
+        clone.style.position = "absolute";
+        clone.style.left = "-9999px";
+        clone.style.top = "-9999px";
+        clone.style.overflow = "visible";
+        clone.style.width = "1024px";
+        clone.style.height = "auto";
+        clone.style.background = "#ffffff";
+        document.body.appendChild(clone);
+
+        const canvas = await html2canvas(clone, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          width: 1024,
+          height: clone.offsetHeight,
+          scrollX: 0,
+          scrollY: 0,
+        });
+
+        document.body.removeChild(clone);
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob((b) => resolve(b), "image/png");
+        });
+        if (!blob) return null;
+
+        const file = new File([blob], "ziwei-chart.png", { type: "image/png" });
+        const path = `${user.id}/profile-${Date.now()}-ziwei.png`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("eastern_uploads")
+          .upload(path, file, { upsert: true, contentType: "image/png" });
+        if (uploadError) {
+          console.error("Failed to upload Zi Wei chart image:", uploadError);
+          return null;
+        }
+
+        const publicUrl = supabase.storage.from("eastern_uploads").getPublicUrl(path).data.publicUrl;
+        if (!publicUrl) return null;
+        return publicUrl;
+      } catch (err) {
+        console.error("Failed to capture/upload Zi Wei chart image:", err);
+        return null;
+      } finally {
+        void timeIndex;
+        void izGender;
+      }
+    };
+
+    const ziweiChart = createZiweiChart();
+    const ziweiChartJson = ziweiChart ? (ziweiChart as unknown) : null;
+    const ziweiChartImageUrl = await captureChartImageAndUpload();
+
+    const nextProfileWithChart: UserProfile = {
+      ...nextProfile,
+      ziweiChartJson: ziweiChartJson ?? undefined,
+      ziweiChartImageUrl: ziweiChartImageUrl ?? undefined,
+    };
+
+    setStoredProfile(nextProfileWithChart);
+    setProfile(nextProfileWithChart);
     setPlaceOfBirth(nextPlace);
 
     try {
       const { error } = await supabase.from("profiles").upsert({
         user_id: user.id,
-        full_name: nextProfile.fullName,
-        date_of_birth: nextProfile.dateOfBirth,
-        lunar_date_of_birth: nextProfile.lunarDateOfBirth,
-        time_of_birth: nextProfile.timeOfBirth ?? null,
-        place_of_birth: nextProfile.placeOfBirth,
-        gender: nextProfile.gender ?? null,
+        full_name: nextProfileWithChart.fullName,
+        date_of_birth: nextProfileWithChart.dateOfBirth,
+        lunar_date_of_birth: nextProfileWithChart.lunarDateOfBirth,
+        time_of_birth: nextProfileWithChart.timeOfBirth ?? null,
+        place_of_birth: nextProfileWithChart.placeOfBirth,
+        gender: nextProfileWithChart.gender ?? null,
+        ziwei_chart_json: (nextProfileWithChart.ziweiChartJson as unknown as Json) ?? null,
+        ziwei_chart_image_url: nextProfileWithChart.ziweiChartImageUrl ?? null,
       });
 
       if (error) {
@@ -267,6 +386,37 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
 
   return (
     <div className="mx-auto">
+      <div
+        style={{ position: "absolute", left: -99999, top: 0, width: 1024, background: "#ffffff" }}
+        aria-hidden
+      >
+        <div ref={chartCaptureRef} style={{ width: 1024, padding: 8, background: "#ffffff" }}>
+          <Iztrolabe
+            birthday={`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`}
+            birthTime={(birthHour && birthMinute ? (() => {
+              const hour = Number(birthHour);
+              if (!Number.isFinite(hour)) return 0;
+              if (hour >= 23 || hour < 1) return 0;
+              if (hour >= 1 && hour < 3) return 1;
+              if (hour >= 3 && hour < 5) return 2;
+              if (hour >= 5 && hour < 7) return 3;
+              if (hour >= 7 && hour < 9) return 4;
+              if (hour >= 9 && hour < 11) return 5;
+              if (hour >= 11 && hour < 13) return 6;
+              if (hour >= 13 && hour < 15) return 7;
+              if (hour >= 15 && hour < 17) return 8;
+              if (hour >= 17 && hour < 19) return 9;
+              if (hour >= 19 && hour < 21) return 10;
+              return 11;
+            })() : 0) as number}
+            birthdayType="solar"
+            gender={(gender && gender.toLowerCase().includes("female") ? "female" : "male") as "male" | "female"}
+            lang="vi-VN"
+            horoscopeDate={new Date()}
+            horoscopeHour={0}
+          />
+        </div>
+      </div>
       <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8 mx-auto">
         <Reveal from="up" offset={18}>
           <div className="mb-6 text-center">

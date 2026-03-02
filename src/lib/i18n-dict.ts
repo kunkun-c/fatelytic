@@ -793,12 +793,14 @@ export const translations = {
   "en": "Analysis may take 1–3 minutes depending on image quality and system load. Please wait."
 },
 
-  "eastern.option.upload.label": { vi: "Tải lá số", en: "Upload chart" },
+  "eastern.option.upload.label": { vi: "Luận giải lá số tử vi", en: "Interpret Tu Vi chart" },
 "eastern.option.upload.desc": {
-  "vi": "Luận giải chi tiết từng cung qua lá số",
-  "en": "Upload your chart image for a detailed interpretation"
+  "vi": "Khám phá bản thân qua lá số Tử Vi.",
+  "en": "Explore yourself through your Tu Vi chart."
 },
-  "eastern.option.upload.prompt": { vi: "Luận giải chi tiết lá số tử vi từ ảnh", en: "Analyze this Eastern astrology chart in detail based on the image" },
+  "eastern.option.upload.prompt": { vi: "Luận giải chi tiết lá số tử vi từ ảnh", en: "Analyze this Tu Vi chart in detail based on the image" },
+
+  "eastern.option.savedChart.label": { vi: "Dùng lá số đã lưu", en: "Use saved chart" },
   "eastern.option.overview.label": { vi: "Tổng quan", en: "Overview" },
 "eastern.option.overview.desc": {
   "vi": "Bức tranh tổng thể về tính cách và cuộc sống",
@@ -842,7 +844,7 @@ export const translations = {
 },
 
   "eastern.image.inputOptions.title": { vi: "Tuỳ chọn đầu vào", en: "Input options" },
-  "eastern.image.inputOptions.desc": { vi: "Bạn có thể tải lên chân dung, lá số, cả hai, hoặc không tải lên gì (hệ thống sẽ tạo ảnh dựa trên thông tin hồ sơ).", en: "You can upload a portrait, a chart, both, or upload nothing (we'll generate based on your profile)." },
+  "eastern.image.inputOptions.desc": { vi: "Hệ thống sẽ tạo ảnh dựa trên dữ liệu lá số đã lưu và hồ sơ của bạn.", en: "We'll generate the image based on your saved chart data and profile." },
   "eastern.image.portraitOptional": { vi: "Chân dung (tuỳ chọn)", en: "Portrait (optional)" },
   "eastern.image.portraitClick": { vi: "Nhấn để tải ảnh chân dung", en: "Click to upload a portrait" },
   "eastern.image.chartOptional": { vi: "Lá số Tử Vi (tuỳ chọn)", en: "Chart (optional)" },
@@ -852,8 +854,8 @@ export const translations = {
   "eastern.image.clearInputs": { vi: "Xoá đầu vào", en: "Clear inputs" },
   "eastern.image.slowTitle": { vi: "Tạo ảnh có thể mất vài phút", en: "Image generation may take a few minutes" },
   "eastern.image.slowDesc": {
-    vi: "Nếu bạn tải ảnh lên (chân dung/lá số), thời gian xử lý có thể lâu hơn. Hãy giữ tab mở trong lúc hệ thống xử lý.",
-    en: "If you upload images (portrait/chart), processing can take longer. Please keep this tab open while we work.",
+    vi: "Hệ thống sẽ tạo ảnh dựa trên dữ liệu lá số đã lưu và hồ sơ của bạn. Quá trình này có thể mất vài phút — hãy giữ tab mở trong lúc xử lý.",
+    en: "We'll generate the image based on your saved chart data and profile. This can take a few minutes — please keep this tab open while we work.",
   },
 
   "eastern.profileReading.title": { vi: "Luận giải theo hồ sơ", en: "Profile-based reading" },
@@ -874,6 +876,7 @@ export const translations = {
   "eastern.toast.invalidImage": { vi: "Vui lòng chọn ảnh PNG hoặc JPEG.", en: "Please select a PNG or JPEG image." },
   "eastern.toast.imageGenerateFailed": { vi: "Không thể tạo ảnh lúc này. Vui lòng thử lại.", en: "Unable to generate the image right now. Please try again." },
   "eastern.toast.missingChartImage": { vi: "Vui lòng chọn ảnh lá số.", en: "Please select a chart image." },
+  "eastern.toast.missingSavedChart": { vi: "Chưa có lá số đã lưu trong hồ sơ. Vui lòng cập nhật hồ sơ trước.", en: "No saved chart found in your profile. Please update your profile first." },
   "eastern.toast.invalidJson": { vi: "Kết quả trả về không đúng định dạng JSON. Vui lòng thử lại.", en: "The result is not valid JSON. Please try again." },
 
   // NotFound

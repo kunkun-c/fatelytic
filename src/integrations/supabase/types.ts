@@ -71,6 +71,8 @@ export type Database = {
           time_of_birth: string | null
           place_of_birth: string
           gender: string | null
+          ziwei_chart_json: Json | null
+          ziwei_chart_image_url: string | null
           created_at: string
           updated_at: string
         }
@@ -83,6 +85,8 @@ export type Database = {
           time_of_birth?: string | null
           place_of_birth: string
           gender?: string | null
+          ziwei_chart_json?: Json | null
+          ziwei_chart_image_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -95,6 +99,8 @@ export type Database = {
           time_of_birth?: string | null
           place_of_birth?: string
           gender?: string | null
+          ziwei_chart_json?: Json | null
+          ziwei_chart_image_url?: string | null
           created_at?: string
           updated_at?: string
         }

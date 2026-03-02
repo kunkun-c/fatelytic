@@ -9,6 +9,8 @@ export interface UserProfile {
   timeOfBirth?: string;
   placeOfBirth: string;
   gender?: string;
+  ziweiChartJson?: unknown;
+  ziweiChartImageUrl?: string;
 }
 
 export function getStoredProfile(): UserProfile | null {

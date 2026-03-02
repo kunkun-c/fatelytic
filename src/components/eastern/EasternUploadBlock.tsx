@@ -5,41 +5,16 @@ import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { ImageZoom } from "@/components/animate-ui/primitives/effects/image-zoom";
 import EasternUploadResult from "@/components/eastern/EasternUploadResult";
 import React from "react";
-
-type SectionItem = {
-  title: string;
-  content: string;
-  source?: string;
-};
-
-type PalaceSection = {
-  title: string;
-  items: Array<{ text: string; source?: string }>;
-};
-
-type PeriodSection = {
-  label: string;
-  items: Array<{ text: string; source?: string }>;
-};
-
-type EasternResult = {
-  overview: string;
-  sections: SectionItem[];
-  overviewQuotes?: string[];
-  detailSections?: SectionItem[];
-  daiVan?: string[];
-  tieuVan?: string[];
-  overviewItems?: Array<{ heading?: string; text: string; source?: string }>;
-  palaceSections?: PalaceSection[];
-  topics?: Array<{ id: string; label: string; target: string }>;
-  daiVanSections?: PeriodSection[];
-  tieuVanSections?: PeriodSection[];
-};
+import type { EasternResult } from "@/components/eastern/EasternUploadResult";
 
 type Props = {
   t: (key: string) => string;
   loading: boolean;
   result: EasternResult | null;
+  uploadSource: "image" | "saved";
+  setUploadSource: (next: "image" | "saved") => void;
+  hasSavedChart: boolean;
+  savedChartImageUrl?: string | null;
   fileInputRef: React.RefObject<HTMLInputElement>;
   uploadPreview: string | null;
   uploadFileName: string;
@@ -68,6 +43,10 @@ export default function EasternUploadBlock({
   t,
   loading,
   result,
+  uploadSource,
+  setUploadSource,
+  hasSavedChart,
+  savedChartImageUrl,
   fileInputRef,
   uploadPreview,
   uploadFileName,
@@ -95,6 +74,33 @@ export default function EasternUploadBlock({
     <>
       <Reveal from="up" offset={18} delay={0.05}>
         <Card className="p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">{t("eastern.option.upload.label")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("eastern.option.upload.desc")}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={uploadSource === "image" ? "default" : "outline"}
+                onClick={() => setUploadSource("image")}
+                disabled={loading}
+              >
+                {t("eastern.upload.chooseChart")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={uploadSource === "saved" ? "default" : "outline"}
+                onClick={() => setUploadSource("saved")}
+                disabled={loading || !hasSavedChart}
+              >
+                {t("eastern.option.savedChart.label")}
+              </Button>
+            </div>
+          </div>
+
           <input
             ref={fileInputRef}
             type="file"
@@ -104,11 +110,14 @@ export default function EasternUploadBlock({
           />
           <div
             className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40 cursor-pointer sm:p-10 relative overflow-hidden"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              if (uploadSource !== "image") return;
+              fileInputRef.current?.click();
+            }}
           >
-            {uploadPreview && loading && (
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-cyan-500/50 opacity-80 animate-pulse">
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/30 to-transparent animate-pulse" />
+            {loading && (uploadPreview || (uploadSource === "saved" && hasSavedChart)) && (
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/60 via-purple-500/60 to-cyan-500/60 opacity-90 animate-pulse">
+                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/40 to-transparent animate-pulse" />
                 <div className="absolute inset-0">
                   <div
                     className="h-full w-full bg-gradient-to-b from-transparent via-blue-500/70 to-transparent animate-pulse"
@@ -119,6 +128,7 @@ export default function EasternUploadBlock({
                     style={{ animation: "scan 3s linear infinite reverse" }}
                   />
                 </div>
+                <div className="absolute inset-0 backdrop-blur-[1px]" />
                 <div
                   className="absolute inset-0 bg-grid-pattern opacity-30"
                   style={{
@@ -131,7 +141,54 @@ export default function EasternUploadBlock({
               </div>
             )}
 
-            {uploadPreview ? (
+            {uploadSource === "saved" && hasSavedChart ? (
+              <div className="relative z-10">
+                {savedChartImageUrl ? (
+                  <>
+                    <ImageZoom zoomScale={2.5} zoomOnHover={true} zoomOnClick={false} className="max-h-64">
+                      <img
+                        src={savedChartImageUrl}
+                        alt="Saved chart"
+                        className={`max-h-64 rounded-lg shadow-lg ${loading ? "opacity-70" : "opacity-100"}`}
+                      />
+                    </ImageZoom>
+                    {loading && (
+                      <>
+                        <div className="absolute -top-2 -left-2 flex gap-1">
+                          <div className="h-3 w-3 bg-blue-500 rounded-full animate-ping shadow-lg shadow-blue-500/60" />
+                          <div
+                            className="h-3 w-3 bg-purple-500 rounded-full animate-ping shadow-lg shadow-purple-500/60"
+                            style={{ animationDelay: "0.5s" }}
+                          />
+                          <div
+                            className="h-3 w-3 bg-cyan-500 rounded-full animate-ping shadow-lg shadow-cyan-500/60"
+                            style={{ animationDelay: "1s" }}
+                          />
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 flex gap-1">
+                          <div
+                            className="h-3 w-3 bg-green-500 rounded-full animate-ping shadow-lg shadow-green-500/60"
+                            style={{ animationDelay: "1.5s" }}
+                          />
+                          <div
+                            className="h-3 w-3 bg-yellow-500 rounded-full animate-ping shadow-lg shadow-yellow-500/60"
+                            style={{ animationDelay: "2s" }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="z-10">
+                    <div className="relative mb-3 flex justify-center">
+                      <Upload className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">{t("eastern.option.savedChart.label")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t("eastern.upload.note")}</p>
+                  </div>
+                )}
+              </div>
+            ) : uploadPreview ? (
               <div className="relative z-10">
                 <ImageZoom zoomScale={2.5} zoomOnHover={true} zoomOnClick={false} className="max-h-64">
                   <img
@@ -221,7 +278,7 @@ export default function EasternUploadBlock({
             size="lg"
             className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-6"
             onClick={runAnalyze}
-            disabled={loading || !uploadFile}
+            disabled={loading || (uploadSource === "image" && !uploadFile) || (uploadSource === "saved" && !hasSavedChart)}
           >
             <Sparkles className="h-4 w-4" animate animateOnHover={false} animation="default" loop />
             {t("eastern.upload.start")}

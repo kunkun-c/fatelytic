@@ -19,16 +19,49 @@ interface EasternImageResultProps {
 export default function EasternImageResult({
   images,
   compatibilityScore,
+  compatibilityRationale,
+  spousePortraitDirection,
 }: EasternImageResultProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const imageUrls = useMemo(() => {
-    if (!images || images.length === 0) return [];
-    return images.map((img) => {
-      const raw = String(img.data ?? "").trim();
-      if (raw.startsWith("data:")) return raw;
-      return `data:${img.mimeType};base64,${raw}`;
-    });
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!images || images.length === 0) {
+      setImageUrls([]);
+      return;
+    }
+
+    let cancelled = false;
+    const createdObjectUrls: string[] = [];
+
+    const buildUrls = async () => {
+      const urls = await Promise.all(
+        images.map(async (img) => {
+          const raw = String(img.data ?? "").trim();
+          const dataUrl = raw.startsWith("data:") ? raw : `data:${img.mimeType};base64,${raw}`;
+
+          try {
+            const blob = await (await fetch(dataUrl)).blob();
+            const objUrl = URL.createObjectURL(blob);
+            createdObjectUrls.push(objUrl);
+            return objUrl;
+          } catch {
+            return dataUrl;
+          }
+        })
+      );
+
+      if (cancelled) return;
+      setImageUrls(urls);
+    };
+
+    void buildUrls();
+
+    return () => {
+      cancelled = true;
+      for (const url of createdObjectUrls) URL.revokeObjectURL(url);
+    };
   }, [images]);
 
   useEffect(() => {
@@ -57,6 +90,17 @@ export default function EasternImageResult({
             ) : null}
           </div>
         </div>
+
+        {(spousePortraitDirection || compatibilityRationale) && (
+          <div className="mt-4 space-y-3">
+            {spousePortraitDirection ? (
+              <div className="rounded-xl border border-border bg-background p-3">
+                <p className="text-sm font-semibold text-foreground">Hướng phác hoạ (từ lá số)</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{spousePortraitDirection}</p>
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-center">

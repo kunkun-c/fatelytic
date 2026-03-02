@@ -72,4 +72,3 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
 fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 const outPath = path.join(PUBLIC_DIR, "sitemap.xml");
 fs.writeFileSync(outPath, xml, "utf8");
-console.log(`Generated ${outPath} with base URL ${origin}`);

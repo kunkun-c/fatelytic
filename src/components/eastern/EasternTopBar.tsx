@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import React from "react";
 import { Link } from "react-router-dom";
+import type { EasternResult } from "@/components/eastern/EasternUploadResult";
 
 type OptionItem = {
   id: string;
@@ -12,26 +13,12 @@ type OptionItem = {
   promptKey?: string;
 };
 
-type EasternResult = {
-  overview: string;
-  sections: Array<{ title: string; content: string; source?: string }>;
-  overviewQuotes?: string[];
-  detailSections?: Array<{ title: string; content: string; source?: string }>;
-  daiVan?: string[];
-  tieuVan?: string[];
-  overviewItems?: Array<{ heading?: string; text: string; source?: string }>;
-  palaceSections?: Array<{ title: string; items: Array<{ text: string; source?: string }> }>;
-  topics?: Array<{ id: string; label: string; target: string }>;
-  daiVanSections?: Array<{ label: string; items: Array<{ text: string; source?: string }> }>;
-  tieuVanSections?: Array<{ label: string; items: Array<{ text: string; source?: string }> }>;
-};
-
 type Props = {
   t: (key: string) => string;
   selectedOption: string | null;
   options: OptionItem[];
   setSelectedOption: (value: string | null) => void;
-  setResult: (value: EasternResult | null) => void;
+  setResult: React.Dispatch<React.SetStateAction<EasternResult | null>>;
 };
 
 export default function EasternTopBar({ t, selectedOption, options, setSelectedOption, setResult }: Props) {

@@ -3,7 +3,8 @@ import { Iztrolabe } from "react-iztro";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import { astro } from "iztro";
-import { ArrowLeft, Download } from "@/components/ui/icons";
+import { ArrowLeft, Download, Sparkles } from "@/components/ui/icons";
+import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -262,6 +263,7 @@ function translateChineseLunarDate(value: string) {
 }
 
 export default function ZiWeiChartSection({ profile, onBack }: Props) {
+  const navigate = useNavigate();
   const timeIndex = useMemo(() => getChineseHourIndexFromTime(profile.timeOfBirth), [profile.timeOfBirth]);
   const gender = useMemo(() => getIztroGender(profile.gender), [profile.gender]);
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -457,17 +459,30 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
             Quay lại
           </Button>
         </Reveal>
-        <Reveal from="right" offset={18} delay={0.04}>
-          <Button
-            size="sm"
-            onClick={() => void download()}
-            disabled={isDownloading}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" animate={isDownloading ? false : undefined} animateOnHover={false} animation="default" loop />
-            {isDownloading ? "Đang tải..." : "Tải ảnh"}
-          </Button>
-        </Reveal>
+        <div className="flex items-center gap-2">
+          <Reveal from="right" offset={18} delay={0.04}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/eastern-astrology", { state: { autoOptionId: "upload", autoUploadSource: "saved" } })}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" animate animateOnHover={false} animation="default" loop />
+              Luận giải lá số
+            </Button>
+          </Reveal>
+          <Reveal from="right" offset={18} delay={0.04}>
+            <Button
+              size="sm"
+              onClick={() => void download()}
+              disabled={isDownloading}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" animate={isDownloading ? false : undefined} animateOnHover={false} animation="default" loop />
+              {isDownloading ? "Đang tải..." : "Tải ảnh"}
+            </Button>
+          </Reveal>
+        </div>
       </div>
 
       <Reveal from="up" offset={18} delay={0.08}>
