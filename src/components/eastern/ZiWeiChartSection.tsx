@@ -1,8 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { Iztrolabe } from "react-iztro";
-import html2canvas from "html2canvas";
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { astro } from "iztro";
 import { ArrowLeft, Download, Sparkles } from "@/components/ui/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -23,6 +20,8 @@ import {
   translateEarthlyBranch,
   translateHeavenlyStem,
 } from "@/lib/astrology-translations";
+
+const LazyIztrolabe = lazy(() => import("react-iztro").then((m) => ({ default: m.Iztrolabe })));
 
 type Props = {
   profile: UserProfile;
@@ -268,21 +267,41 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
   const gender = useMemo(() => getIztroGender(profile.gender), [profile.gender]);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [astroModule, setAstroModule] = useState<null | { astro: { astrolabeBySolarDate: (...args: unknown[]) => unknown } }>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const mod = await import("iztro");
+        if (alive) setAstroModule(mod as unknown as { astro: { astrolabeBySolarDate: (...args: unknown[]) => unknown } });
+      } catch (e) {
+        if (alive) setAstroModule(null);
+        console.error("Failed to load iztro", e);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // We use zh-CN for data so our existing translation dictionary can map Chinese terms -> Vietnamese.
   const astrolabe = useMemo(() => {
+    if (!astroModule) return null;
     try {
-      return astro.astrolabeBySolarDate(profile.dateOfBirth, timeIndex, gender, true, "zh-CN");
+      return astroModule.astro.astrolabeBySolarDate(profile.dateOfBirth, timeIndex, gender, true, "zh-CN") as unknown;
     } catch (e) {
       console.error("Failed to build Zi Wei astrolabe", e);
       return null;
     }
-  }, [gender, profile.dateOfBirth, timeIndex]);
+  }, [astroModule, gender, profile.dateOfBirth, timeIndex]);
 
   const horoscope = useMemo(() => {
     if (!astrolabe) return null;
     try {
-      return astrolabe.horoscope(new Date(), timeIndex);
+      const h = (astrolabe as unknown as { horoscope?: (d: Date, idx: number) => unknown }).horoscope;
+      return h ? h(new Date(), timeIndex) : null;
     } catch (e) {
       console.error("Failed to build Zi Wei horoscope", e);
       return null;
@@ -379,7 +398,7 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
     };
   }, [horoscope]);
 
-  const download = async () => {
+  const handleDownload = async () => {
     setIsDownloading(true);
     const wrapper = chartRef.current;
     if (!wrapper) {
@@ -407,6 +426,7 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
       clone.style.background = "#ffffff";
       document.body.appendChild(clone);
 
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(clone, {
         backgroundColor: "#ffffff",
         scale: 2,
@@ -474,7 +494,7 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
           <Reveal from="right" offset={18} delay={0.04}>
             <Button
               size="sm"
-              onClick={() => void download()}
+              onClick={() => void handleDownload()}
               disabled={isDownloading}
               className="gap-2"
             >
@@ -581,15 +601,17 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
         <div className="overflow-x-auto rounded-xl border border-border bg-white p-2">
           <div ref={chartRef} className="flex justify-center">
             <div style={{ width: 1024, minWidth: 1024, height: "auto" }}>
-              <Iztrolabe
-                birthday={profile.dateOfBirth}
-                birthTime={timeIndex}
-                birthdayType="solar"
-                gender={gender}
-                lang="vi-VN"
-                horoscopeDate={new Date()}
-                horoscopeHour={timeIndex}
-              />
+              <Suspense fallback={<div className="w-full aspect-[4/3] bg-muted" />}>
+                <LazyIztrolabe
+                  birthday={profile.dateOfBirth}
+                  birthTime={timeIndex}
+                  birthdayType="solar"
+                  gender={gender}
+                  lang="vi-VN"
+                  horoscopeDate={new Date()}
+                  horoscopeHour={0}
+                />
+              </Suspense>
             </div>
           </div>
         </div>

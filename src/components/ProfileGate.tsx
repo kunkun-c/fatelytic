@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Lunar } from "lunar-javascript";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "@/components/ui/icons";
 import { getStoredProfile, setStoredProfile, type UserProfile } from "@/lib/profile";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
-import { astro } from "iztro";
-import html2canvas from "html2canvas";
-import { Iztrolabe } from "react-iztro";
 import type { Json } from "@/integrations/supabase/types";
+
+const LazyIztrolabe = lazy(() => import("react-iztro").then((m) => ({ default: m.Iztrolabe })));
 
 interface ProfileGateProps {
   children?: React.ReactNode;
@@ -38,14 +38,13 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
   const [provinceCode, setProvinceCode] = useState("");
   const [districtCode, setDistrictCode] = useState("");
   const [wardCode, setWardCode] = useState("");
-  const [provinces, setProvinces] = useState<Array<{ code: number; name: string }>>([]);
-  const [districts, setDistricts] = useState<Array<{ code: number; name: string }>>([]);
-  const [wards, setWards] = useState<Array<{ code: number; name: string }>>([]);
-  const [locationsLoading, setLocationsLoading] = useState(false);
   const [gender, setGender] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [hydrating, setHydrating] = useState(true);
+  const [captureEnabled, setCaptureEnabled] = useState(false);
+  const prevProvinceRef = useRef<string>("");
+  const prevDistrictRef = useRef<string>("");
 
   useEffect(() => {
     const hydrate = async () => {
@@ -118,74 +117,58 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
     void hydrate();
   }, [user]);
 
-  useEffect(() => {
-    const loadProvinces = async () => {
-      setLocationsLoading(true);
-      try {
-        const response = await fetch("https://provinces.open-api.vn/api/p/?depth=1");
-        if (!response.ok) throw new Error("Failed to load provinces");
-        const data = (await response.json()) as Array<{ code: number; name: string }>;
-        setProvinces(data);
-      } catch (error) {
-        console.error("Failed to load provinces:", error);
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
+  const { data: provinces = [], isFetching: provincesFetching } = useQuery({
+    queryKey: ["vn-provinces"],
+    queryFn: async () => {
+      const response = await fetch("https://provinces.open-api.vn/api/p/?depth=1");
+      if (!response.ok) throw new Error("Failed to load provinces");
+      return (await response.json()) as Array<{ code: number; name: string }>;
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
 
-    void loadProvinces();
-  }, []);
+  const { data: districts = [], isFetching: districtsFetching } = useQuery({
+    queryKey: ["vn-districts", provinceCode],
+    enabled: !!provinceCode,
+    queryFn: async () => {
+      const response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+      if (!response.ok) throw new Error("Failed to load districts");
+      const data = (await response.json()) as { districts: Array<{ code: number; name: string }> };
+      return data.districts ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+
+  const { data: wards = [], isFetching: wardsFetching } = useQuery({
+    queryKey: ["vn-wards", districtCode],
+    enabled: !!districtCode,
+    queryFn: async () => {
+      const response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+      if (!response.ok) throw new Error("Failed to load wards");
+      const data = (await response.json()) as { wards: Array<{ code: number; name: string }> };
+      return data.wards ?? [];
+    },
+    staleTime: 1000 * 60 * 60 * 24,
+    gcTime: 1000 * 60 * 60 * 24,
+  });
+
+  const locationsLoading = provincesFetching || districtsFetching || wardsFetching;
 
   useEffect(() => {
-    if (!provinceCode) {
-      setDistricts([]);
+    if (prevProvinceRef.current && prevProvinceRef.current !== provinceCode) {
       setDistrictCode("");
-      setWards([]);
       setWardCode("");
-      return;
     }
-
-    const loadDistricts = async () => {
-      setLocationsLoading(true);
-      try {
-        const response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-        if (!response.ok) throw new Error("Failed to load districts");
-        const data = (await response.json()) as { districts: Array<{ code: number; name: string }> };
-        setDistricts(data.districts ?? []);
-      } catch (error) {
-        console.error("Failed to load districts:", error);
-        setDistricts([]);
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
-
-    void loadDistricts();
+    prevProvinceRef.current = provinceCode;
   }, [provinceCode]);
 
   useEffect(() => {
-    if (!districtCode) {
-      setWards([]);
+    if (prevDistrictRef.current && prevDistrictRef.current !== districtCode) {
       setWardCode("");
-      return;
     }
-
-    const loadWards = async () => {
-      setLocationsLoading(true);
-      try {
-        const response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-        if (!response.ok) throw new Error("Failed to load wards");
-        const data = (await response.json()) as { wards: Array<{ code: number; name: string }> };
-        setWards(data.wards ?? []);
-      } catch (error) {
-        console.error("Failed to load wards:", error);
-        setWards([]);
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
-
-    void loadWards();
+    prevDistrictRef.current = districtCode;
   }, [districtCode]);
 
   const requiresProfile = useMemo(() => {
@@ -278,7 +261,7 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
       try {
         const timeIndex = getChineseHourIndexFromTime(nextProfile.timeOfBirth);
         const izGender = getIztroGender(nextProfile.gender);
-        return astro.astrolabeBySolarDate(nextProfile.dateOfBirth, timeIndex, izGender, true, "zh-CN");
+        return null;
       } catch (err) {
         console.error("Failed to create Zi Wei chart:", err);
         return null;
@@ -290,7 +273,13 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
       const timeIndex = getChineseHourIndexFromTime(nextProfile.timeOfBirth);
       const izGender = getIztroGender(nextProfile.gender);
       try {
+        setCaptureEnabled(true);
         await new Promise((r) => window.setTimeout(r, 200));
+
+        const [{ astro }, { default: html2canvas }] = await Promise.all([
+          import("iztro"),
+          import("html2canvas"),
+        ]);
 
         const node = chartCaptureRef.current.firstElementChild as HTMLElement | null;
         if (!node) return null;
@@ -347,7 +336,17 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
       }
     };
 
-    const ziweiChart = createZiweiChart();
+    const ziweiChart = await (async () => {
+      try {
+        const timeIndex = getChineseHourIndexFromTime(nextProfile.timeOfBirth);
+        const izGender = getIztroGender(nextProfile.gender);
+        const { astro } = await import("iztro");
+        return astro.astrolabeBySolarDate(nextProfile.dateOfBirth, timeIndex, izGender, true, "zh-CN");
+      } catch (err) {
+        console.error("Failed to create Zi Wei chart:", err);
+        return null;
+      }
+    })();
     const ziweiChartJson = ziweiChart ? (ziweiChart as unknown) : null;
     const ziweiChartImageUrl = await captureChartImageAndUpload();
 
@@ -391,30 +390,34 @@ export default function ProfileGate({ children, mode = "gate" }: ProfileGateProp
         aria-hidden
       >
         <div ref={chartCaptureRef} style={{ width: 1024, padding: 8, background: "#ffffff" }}>
-          <Iztrolabe
-            birthday={`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`}
-            birthTime={(birthHour && birthMinute ? (() => {
-              const hour = Number(birthHour);
-              if (!Number.isFinite(hour)) return 0;
-              if (hour >= 23 || hour < 1) return 0;
-              if (hour >= 1 && hour < 3) return 1;
-              if (hour >= 3 && hour < 5) return 2;
-              if (hour >= 5 && hour < 7) return 3;
-              if (hour >= 7 && hour < 9) return 4;
-              if (hour >= 9 && hour < 11) return 5;
-              if (hour >= 11 && hour < 13) return 6;
-              if (hour >= 13 && hour < 15) return 7;
-              if (hour >= 15 && hour < 17) return 8;
-              if (hour >= 17 && hour < 19) return 9;
-              if (hour >= 19 && hour < 21) return 10;
-              return 11;
-            })() : 0) as number}
-            birthdayType="solar"
-            gender={(gender && gender.toLowerCase().includes("female") ? "female" : "male") as "male" | "female"}
-            lang="vi-VN"
-            horoscopeDate={new Date()}
-            horoscopeHour={0}
-          />
+          {captureEnabled ? (
+            <Suspense fallback={<div className="w-full aspect-[4/3] bg-muted" />}>
+              <LazyIztrolabe
+                birthday={`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`}
+                birthTime={(birthHour && birthMinute ? (() => {
+                  const hour = Number(birthHour);
+                  if (!Number.isFinite(hour)) return 0;
+                  if (hour >= 23 || hour < 1) return 0;
+                  if (hour >= 1 && hour < 3) return 1;
+                  if (hour >= 3 && hour < 5) return 2;
+                  if (hour >= 5 && hour < 7) return 3;
+                  if (hour >= 7 && hour < 9) return 4;
+                  if (hour >= 9 && hour < 11) return 5;
+                  if (hour >= 11 && hour < 13) return 6;
+                  if (hour >= 13 && hour < 15) return 7;
+                  if (hour >= 15 && hour < 17) return 8;
+                  if (hour >= 17 && hour < 19) return 9;
+                  if (hour >= 19 && hour < 21) return 10;
+                  return 11;
+                })() : 0) as number}
+                birthdayType="solar"
+                gender={(gender && gender.toLowerCase().includes("female") ? "female" : "male") as "male" | "female"}
+                lang="vi-VN"
+                horoscopeDate={new Date()}
+                horoscopeHour={0}
+              />
+            </Suspense>
+          ) : null}
         </div>
       </div>
       <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-lg sm:p-8 mx-auto">

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, ImagePlus, Clock } from "@/components/ui/icons";
 import ReactMarkdown from "react-markdown";
 import { useI18n } from "@/lib/i18n";
@@ -15,8 +15,9 @@ import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import type { Json } from "@/integrations/supabase/types";
 import { useLocation } from "react-router-dom";
-import ZiWeiChartSection from "@/components/eastern/ZiWeiChartSection";
 import type { EasternResult as EasternUploadResultType } from "@/components/eastern/EasternUploadResult";
+
+const ZiWeiChartSection = lazy(() => import("@/components/eastern/ZiWeiChartSection"));
 
 type EasternResult = EasternUploadResultType;
 
@@ -839,7 +840,9 @@ const EasternAstrology = () => {
         )}
 
         {showZiWeiChart && profile && (
-          <ZiWeiChartSection profile={profile} onBack={() => setShowZiWeiChart(false)} />
+          <Suspense fallback={<div className="w-full min-h-[calc(100dvh-10rem)] rounded-xl bg-muted" />}>
+            <ZiWeiChartSection profile={profile} onBack={() => setShowZiWeiChart(false)} />
+          </Suspense>
         )}
 
         {!showZiWeiChart && (

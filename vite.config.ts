@@ -1,22 +1,99 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 1407,
-    hmr: {
-      overlay: false,
+export default defineConfig(({ mode }) => {
+  const plugins: PluginOption[] = [react() as unknown as PluginOption];
+
+  if (mode === "development") {
+    plugins.push(componentTagger() as unknown as PluginOption);
+  }
+
+  const config: UserConfig = {
+    server: {
+      host: "::",
+      port: 1407,
+      hmr: {
+        overlay: false,
+      },
     },
-  },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    plugins,
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (!id.includes("node_modules")) return;
+
+            if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/scheduler/")) {
+              return "react";
+            }
+
+            if (id.includes("node_modules/react-router") || id.includes("node_modules/@remix-run/") || id.includes("node_modules/history/")) {
+              return "router";
+            }
+
+            if (id.includes("node_modules/@tanstack/")) {
+              return "tanstack";
+            }
+
+            if (id.includes("node_modules/react-helmet-async/") || id.includes("node_modules/@remix-run/router/") && id.includes("helmet")) {
+              return "helmet";
+            }
+
+            if (id.includes("node_modules/i18next/") || id.includes("node_modules/react-i18next/") || id.includes("node_modules/intl-messageformat/") || id.includes("node_modules/@formatjs/")) {
+              return "i18n";
+            }
+
+            if (id.includes("node_modules/sonner/") || id.includes("node_modules/@radix-ui/react-toast/")) {
+              return "toasts";
+            }
+
+            if (id.includes("node_modules/@radix-ui/") || id.includes("node_modules/radix-ui/")) {
+              return "radix";
+            }
+
+            if (id.includes("node_modules/lucide-react/")) {
+              return "icons";
+            }
+
+            if (id.includes("node_modules/recharts/") || id.includes("node_modules/d3-")) {
+              return "charts";
+            }
+
+            if (id.includes("node_modules/html2canvas/")) {
+              return "html2canvas";
+            }
+
+            if (id.includes("node_modules/react-markdown/") || id.includes("node_modules/remark-") || id.includes("node_modules/rehype-")) {
+              return "markdown";
+            }
+
+            if (id.includes("node_modules/react-iztro/") || id.includes("node_modules/iztro/") || id.includes("node_modules/lunar-javascript/")) {
+              return "astrology";
+            }
+
+            if (id.includes("node_modules/@supabase/")) {
+              return "supabase";
+            }
+
+            if (id.includes("node_modules/motion/") || id.includes("node_modules/framer-motion/") || id.includes("node_modules/@motionone/")) {
+              return "motion";
+            }
+
+            return "vendor";
+          },
+        },
+      },
     },
-    dedupe: ["react", "react-dom"],
-  },
-}));
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+      dedupe: ["react", "react-dom"],
+    },
+  };
+
+  return config;
+});

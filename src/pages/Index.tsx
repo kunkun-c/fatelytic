@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Compass, Brain, Shield, BarChart3, ArrowRight } from "@/components/ui/icons";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
@@ -10,11 +11,17 @@ import { BubbleBackground } from "@/components/animate-ui/primitives/backgrounds
 
 const Index = () => {
   const { t } = useI18n();
+  const { user, loading } = useAuth();
 
   useLayoutConfig({
     seo: { titleKey: "seo.home.title", descriptionKey: "seo.home.desc", path: "/" },
     disableContentWrapper: true,
   });
+
+  // Redirect logged-in users to overview page
+  if (!loading && user) {
+    return <Navigate to="/overview" replace />;
+  }
 
   const features = [
     { icon: Brain, title: t("landing.feature1.title"), description: t("landing.feature1.desc") },
@@ -39,9 +46,15 @@ const Index = () => {
             sixth: "99,102,241",
           }}
         />
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-25"
-          style={{ backgroundImage: `url(${heroBg})` }}
+        <img
+          src={heroBg}
+          alt=""
+          width={1920}
+          height={1080}
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-25 bg-muted"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
         <div className="relative container mx-auto px-4 py-16 md:py-32 lg:py-40">

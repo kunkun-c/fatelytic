@@ -1,5 +1,7 @@
 import type React from "react";
 
+import { memo } from "react";
+
 import SEOHead from "@/components/SEOHead";
 import AdvisoryNotice from "@/components/AdvisoryNotice";
 import UserContextBanner from "@/components/UserContextBanner";
@@ -9,7 +11,7 @@ import LayoutBody from "@/components/layout/LayoutBody";
 import { useLayoutContext } from "@/components/layout/layout-context";
 import { BubbleBackground } from "@/components/animate-ui/primitives/backgrounds/bubble";
 
-export default function LayoutShell({ children }: { children: React.ReactNode }) {
+function LayoutShell({ children }: { children: React.ReactNode }) {
   const { config } = useLayoutContext();
 
   const content = (
@@ -53,3 +55,5 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     </div>
   );
 }
+
+export default memo(LayoutShell);

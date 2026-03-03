@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { astro } from 'iztro';
-import { Iztrolabe } from 'react-iztro';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import '@/styles/iztro.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -74,6 +72,8 @@ interface AstrologyResult {
     ages: number[];
   }>;
 }
+
+const LazyIztrolabe = lazy(() => import('react-iztro').then((m) => ({ default: m.Iztrolabe })));
 
 const chineseHours = [
   { value: 0, label: 'Tí Sớm (23:00-01:00)', range: '23:00~01:00' },
@@ -197,6 +197,7 @@ export default function AstrologyChart() {
     setError('');
 
     try {
+      const { astro } = await import('iztro');
       const result = astro.astrolabeBySolarDate(birthDate, timeIndex, gender, true, 'zh-CN');
       setAstrologyData(result as unknown as AstrologyResult);
     } catch (err) {
@@ -389,15 +390,17 @@ export default function AstrologyChart() {
               <CardContent>
                 <div className="flex justify-center overflow-x-auto">
                   <div style={{ width: 1024, maxWidth: '100%' }}>
-                    <Iztrolabe 
-                      birthday={birthDate} 
-                      birthTime={timeIndex} 
-                      birthdayType="solar" 
-                      gender={gender} 
-                      lang="vi-VN"
-                      horoscopeDate={new Date()}
-                      horoscopeHour={timeIndex}
-                    />
+                    <Suspense fallback={<div className="w-full aspect-[4/3] bg-muted" />}>
+                      <LazyIztrolabe 
+                        birthday={birthDate} 
+                        birthTime={timeIndex} 
+                        birthdayType="solar" 
+                        gender={gender}
+                        lang="vi-VN"
+                        horoscopeDate={new Date()}
+                        horoscopeHour={0}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </CardContent>
@@ -455,8 +458,8 @@ export default function AstrologyChart() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {astrologyData?.palaces?.map((palace, index) => (
-                  <Card key={index} className="relative">
+                    {astrologyData?.palaces?.map((palace) => (
+                  <Card key={`${palace.name}-${palace.heavenlyStem}-${palace.earthlyBranch}`} className="relative">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-lg">
@@ -480,9 +483,9 @@ export default function AstrologyChart() {
                         <div className="mb-2">
                           <Label className="text-xs font-medium">{translateCommon('Chính tinh:')}</Label>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {palace.majorStars.map((star, starIndex) => (
+                            {palace.majorStars.map((star) => (
                               <Badge 
-                                key={starIndex} 
+                                key={`${star.name}-${star.scope}-${star.type}-${star.brightness}`} 
                                 className={`text-xs ${getBrightnessColor(star.brightness)} ${getStarColor(star.name)}`}
                               >
                                 {translateStarName(star.name)}
@@ -497,9 +500,9 @@ export default function AstrologyChart() {
                         <div className="mb-2">
                           <Label className="text-xs font-medium">{translateCommon('Phụ tinh:')}</Label>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {palace.minorStars.map((star, starIndex) => (
+                            {palace.minorStars.map((star) => (
                               <Badge 
-                                key={starIndex} 
+                                key={`${star.name}-${star.scope}-${star.type}-${star.brightness}`} 
                                 variant="outline"
                                 className={`text-xs ${getStarColor(star.name)}`}
                               >
