@@ -4,6 +4,8 @@ import { Menu, X, User, ChevronDown, LogOut, Globe } from "@/components/ui/icons
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Highlight, HighlightItem } from "@/components/animate-ui/primitives/effects/highlight";
+import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
+import { MorphingText } from "@/components/animate-ui/primitives/texts/morphing";
 import { useI18n } from "@/lib/i18n";
 import { APP_INITIAL, APP_NAME } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
@@ -52,8 +54,14 @@ export default function LayoutHeader() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-foreground">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">{APP_INITIAL}</span>
-          {APP_NAME}
+          <img src="/assets/images/logo.png" alt="Fatelytic" className="h-9 w-9 rounded-xl" />
+          <GradientText 
+            text={APP_NAME} 
+            className="font-display text-xl font-semibold tracking-tight"
+            gradient="var(--gradient-primary)"
+            neon={false}
+            transition={{ duration: 3000, repeat: Infinity, ease: 'linear' }}
+          />
         </Link>
 
         <Highlight

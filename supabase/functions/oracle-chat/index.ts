@@ -7,6 +7,10 @@ const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const GEMINI_API_STREAM_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent";
 
+if (!GEMINI_API_KEY) {
+  console.error("GEMINI_API_KEY environment variable is not set");
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -354,7 +358,7 @@ const EASTERN_UPLOAD_PALACE_TITLES = [
   "Cung Điền Trạch (Luận về nhà đất)",
   "Cung Tật Ách (Luận về bệnh tật)",
   "Cung Phụ Mẫu (Luận về cha mẹ)",
-  "Cung Huynh Đệ (Luận về anh/chị/em)",
+  "Cung Huynh Đệ (Luận về anh/em)",
   "Cung Tử Tức (Luận về con cái)",
   "Cung Nô Bộc (Luận về bạn bè)",
 ] as const;
@@ -1076,6 +1080,14 @@ serve(async (req: Request) => {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
+
+  if (!GEMINI_API_KEY) {
+    console.error("GEMINI_API_KEY environment variable is not set");
+    return new Response(JSON.stringify({ error: "Service configuration error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });

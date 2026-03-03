@@ -181,6 +181,22 @@ export const translations = {
   "vi": "Xin lỗi, hệ thống đang tạm gián đoạn. Bạn có thể quay lại sau ít phút.",
   "en": "Sorry, the system is temporarily unavailable. Please try again shortly."
 },
+"chat.error": {
+  "vi": "Đã xảy ra lỗi. Vui lòng thử lại.",
+  "en": "An error occurred. Please try again."
+},
+"chat.micPermission": {
+  "vi": "Vui lòng cho phép truy cập micro để sử dụng tính năng ghi âm.",
+  "en": "Please allow microphone access to use the recording feature."
+},
+"chat.micNotFound": {
+  "vi": "Không tìm thấy thiết bị micro. Vui lòng kiểm tra kết nối.",
+  "en": "No microphone device found. Please check your connection."
+},
+"chat.noAudio": {
+  "vi": "Không ghi được âm thanh. Vui lòng thử lại.",
+  "en": "No audio recorded. Please try again."
+},
 "chat.quickAction.explain": {
   "vi": "Hiểu rõ hồ sơ của tôi",
   "en": "Understand my profile"

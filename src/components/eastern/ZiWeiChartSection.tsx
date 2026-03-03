@@ -1,7 +1,6 @@
 import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Sparkles } from "@/components/ui/icons";
-import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +25,7 @@ const LazyIztrolabe = lazy(() => import("react-iztro").then((m) => ({ default: m
 type Props = {
   profile: UserProfile;
   onBack: () => void;
+  onAnalyze: () => void;
 };
 
 const getChineseHourIndexFromTime = (timeOfBirth?: string) => {
@@ -261,8 +261,7 @@ function translateChineseLunarDate(value: string) {
   }
 }
 
-export default function ZiWeiChartSection({ profile, onBack }: Props) {
-  const navigate = useNavigate();
+export default function ZiWeiChartSection({ profile, onBack, onAnalyze }: Props) {
   const timeIndex = useMemo(() => getChineseHourIndexFromTime(profile.timeOfBirth), [profile.timeOfBirth]);
   const gender = useMemo(() => getIztroGender(profile.gender), [profile.gender]);
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -465,6 +464,8 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
   const fiveElementsClassVi = basicInfo.fiveElementsClass ? translateCommon(basicInfo.fiveElementsClass) : "";
   const { elementVi: fiveElementVi, badgeClass: fiveElementsBadgeClass } = getFiveElementBadge(basicInfo.fiveElementsClass);
 
+  const horoscopeDate = useMemo(() => new Date(), []);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -484,7 +485,7 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/eastern-astrology", { state: { autoOptionId: "upload", autoUploadSource: "saved" } })}
+              onClick={onAnalyze}
               className="gap-2"
             >
               <Sparkles className="h-4 w-4" animate animateOnHover={false} animation="default" loop />
@@ -608,7 +609,7 @@ export default function ZiWeiChartSection({ profile, onBack }: Props) {
                   birthdayType="solar"
                   gender={gender}
                   lang="vi-VN"
-                  horoscopeDate={new Date()}
+                  horoscopeDate={horoscopeDate}
                   horoscopeHour={0}
                 />
               </Suspense>

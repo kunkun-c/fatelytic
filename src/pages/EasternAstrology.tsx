@@ -553,7 +553,7 @@ const EasternAstrology = () => {
       setQaSessionKey(null);
       setLastReadingId(null);
 
-      const shouldStream = resolvedOptionId !== "upload" && resolvedOptionId !== "image";
+      const shouldStream = false; // All eastern astrology modes should use non-streaming
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -763,11 +763,19 @@ const EasternAstrology = () => {
     ]
   );
 
+  const hasAutoRun = useRef(false);
+
+  useEffect(() => {
+    // Reset auto-run flag when location changes
+    hasAutoRun.current = false;
+  }, [location]);
+
   useEffect(() => {
     const state = location.state as { autoOptionId?: string; autoUploadSource?: "image" | "saved" } | null;
     const autoOptionId = state?.autoOptionId;
     if (!autoOptionId) return;
     if (!options.some((o) => o.id === autoOptionId)) return;
+    if (hasAutoRun.current) return; // Prevent multiple runs
 
     if (autoOptionId === "upload" && state?.autoUploadSource) {
       setUploadSource(state.autoUploadSource);
@@ -779,9 +787,11 @@ const EasternAstrology = () => {
     setQaOpen(false);
     setQaSessionKey(null);
     setLastReadingId(null);
+    hasAutoRun.current = true;
 
     void runAnalyze(autoOptionId);
-  }, [location.state, options, runAnalyze]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, options]); // Remove runAnalyze from dependencies to prevent infinite loop
 
   const handleOptionClick = useCallback(
     (option: OptionItem) => {
@@ -802,6 +812,25 @@ const EasternAstrology = () => {
     },
     [clearPartnerInputs, runAnalyze, t]
   );
+
+  const handleAnalyze = useCallback(() => {
+    // Hide chart with smooth transition
+    setShowZiWeiChart(false);
+    
+    // Set up for analysis after transition
+    setTimeout(() => {
+      setSelectedOption("upload");
+      setUploadSource("saved");
+      setResult(null);
+      setStreamingText("");
+      setQaOpen(false);
+      setQaSessionKey(null);
+      setLastReadingId(null);
+      
+      // Trigger analysis
+      void runAnalyze("upload");
+    }, 300); // Wait for transition to complete
+  }, [runAnalyze]);
 
   return (
     <>
@@ -841,7 +870,11 @@ const EasternAstrology = () => {
 
         {showZiWeiChart && profile && (
           <Suspense fallback={<div className="w-full min-h-[calc(100dvh-10rem)] rounded-xl bg-muted" />}>
-            <ZiWeiChartSection profile={profile} onBack={() => setShowZiWeiChart(false)} />
+            <ZiWeiChartSection 
+              profile={profile} 
+              onBack={() => setShowZiWeiChart(false)} 
+              onAnalyze={handleAnalyze}
+            />
           </Suspense>
         )}
 

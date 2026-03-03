@@ -12,7 +12,7 @@ export default function LayoutFooter() {
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <Link to="/" className="flex items-center gap-2 font-display text-lg font-semibold text-foreground">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-sm text-primary">{APP_INITIAL}</span>
+              <img src="/assets/images/logo.png" alt="Fatelytic" className="h-8 w-8 rounded-lg" />
               {APP_NAME}
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">

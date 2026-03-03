@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mic, Send, Square } from "@/components/ui/icons";
+import { Mic, Send, Square } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { APP_STORAGE_PREFIX } from "@/lib/brand";
 import { toast } from "sonner";
@@ -522,38 +522,117 @@ const ChatPanel = ({
     }
   }, [contextJson, lang, profile, sendMessage, t, transcribing, typing, user?.id]);
 
-  const startRecording = useCallback(async () => {
-    if (recording || transcribing) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      recordChunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) recordChunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        void transcribeAndSend();
-      };
-
-      recorderRef.current = recorder;
-      recorder.start();
-      setRecording(true);
-    } catch (err) {
-      console.error("Mic permission error:", err);
-      toast.error(t("chat.error"));
-    }
-  }, [recording, t, transcribeAndSend, transcribing]);
-
   const stopRecording = useCallback(() => {
     const recorder = recorderRef.current;
     if (!recorder) return;
     if (recorder.state === "inactive") return;
-    recorder.stop();
+    
+    try {
+      recorder.stop();
+    } catch (err) {
+      console.error("Error stopping recorder:", err);
+    }
+    
     recorderRef.current = null;
     setRecording(false);
   }, []);
+
+  const startRecording = useCallback(async () => {
+    if (recording || transcribing) return;
+    try {
+      // Clean up any existing recorder
+      if (recorderRef.current) {
+        if (recorderRef.current.state !== "inactive") {
+          recorderRef.current.stop();
+        }
+        recorderRef.current = null;
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true,
+        video: false 
+      });
+      
+      // Check for supported MIME types
+      let mimeType = "audio/webm";
+      const types = ["audio/webm", "audio/ogg", "audio/mp4", "audio/wav"];
+      for (const type of types) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recordChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordChunksRef.current.push(e.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        try {
+          // Stop all tracks to release the microphone
+          stream.getTracks().forEach((track) => {
+            try {
+              track.stop();
+            } catch (err) {
+              console.warn("Failed to stop track:", err);
+            }
+          });
+        } catch (err) {
+          console.warn("Failed to stop tracks:", err);
+        }
+        
+        // Only transcribe if we actually have audio data
+        if (recordChunksRef.current.length > 0) {
+          void transcribeAndSend();
+        } else {
+          setRecording(false);
+          toast.error(t("chat.noAudio"));
+        }
+      };
+      
+      recorder.onerror = (event) => {
+        console.error("MediaRecorder error:", event);
+        setRecording(false);
+        toast.error(t("chat.error"));
+        // Clean up stream on error
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (err) {
+            console.warn("Failed to stop track on error:", err);
+          }
+        });
+      };
+
+      recorderRef.current = recorder;
+      recorder.start(100); // Collect data every 100ms
+      setRecording(true);
+      
+      // Add a timeout to prevent infinite recording
+      setTimeout(() => {
+        if (recorderRef.current && recorderRef.current.state === "recording") {
+          console.warn("Recording timeout - stopping automatically");
+          stopRecording();
+        }
+      }, 30000); // 30 second max recording
+      
+    } catch (err) {
+      console.error("Mic permission error:", err);
+      setRecording(false);
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        toast.error(t("chat.micPermission"));
+      } else if (err instanceof Error && err.name === "NotFoundError") {
+        toast.error(t("chat.micNotFound"));
+      } else {
+        toast.error(t("chat.error"));
+      }
+    }
+  }, [recording, t, transcribeAndSend, transcribing, stopRecording]);
 
   useEffect(() => {
     if (!initialPrompt) return;
@@ -654,15 +733,22 @@ const ChatPanel = ({
           variant="outline"
           disabled={typing || transcribing}
           onClick={() => {
-            if (recording) stopRecording();
-            else void startRecording();
+            try {
+              if (recording) {
+                stopRecording();
+              } else {
+                void startRecording();
+              }
+            } catch (err) {
+              console.error("Voice button click error:", err);
+            }
           }}
           title={recording ? "Stop" : "Voice"}
         >
           {recording ? (
-            <Square className="h-4 w-4" animate animateOnHover={false} animation="default" loop />
+            <Square className="h-4 w-4" />
           ) : (
-            <Mic className="h-4 w-4" animate animateOnHover={false} animation="default" loop={transcribing} />
+            <Mic className="h-4 w-4" />
           )}
         </Button>
         <Button type="submit" size="icon" disabled={typing || !input.trim()}>
