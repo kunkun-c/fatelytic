@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
 
-            // Ensure React is always in its own chunk first
+            // Force React into its own chunk and ensure it's loaded first
             if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/scheduler/")) {
               return "react";
             }
@@ -94,10 +94,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
-        "react": path.resolve(__dirname, "./node_modules/react"),
-        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       },
       dedupe: ["react", "react-dom"],
+    },
+    define: {
+      // Ensure React is available globally
+      "process.env.NODE_ENV": JSON.stringify(mode === "development" ? "development" : "production"),
     },
   };
 
