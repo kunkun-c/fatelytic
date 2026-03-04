@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
 
+            // Ensure React is always in its own chunk first
             if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/scheduler/")) {
               return "react";
             }
@@ -86,10 +87,25 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
+      // Ensure proper module resolution
+      target: "esnext",
+      minify: "terser",
+      terserOptions: {
+        compress: {
+          // Preserve React context creation
+          pure_funcs: ["console.log"],
+        },
+        mangle: {
+          // Preserve React-related names
+          reserved: ["React", "createContext", "useContext"],
+        },
+      },
     },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+        "react": path.resolve(__dirname, "./node_modules/react"),
+        "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       },
       dedupe: ["react", "react-dom"],
     },
