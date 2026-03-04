@@ -1,11 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { BASE_PROMPTS, MODULE_PROMPTS } from "./prompts.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type ModuleKey = Extract<keyof typeof MODULE_PROMPTS, string>;
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const GEMINI_API_STREAM_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("SUPABASE_URL or SERVICE_ROLE_KEY environment variable is not set");
+}
+
+const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  : null;
 
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY environment variable is not set");
@@ -14,6 +26,53 @@ if (!GEMINI_API_KEY) {
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+function getBearerToken(req: Request): string | null {
+  const header = req.headers.get("Authorization") ?? "";
+  const m = header.match(/^\s*Bearer\s+(.+)\s*$/i);
+  return m ? m[1] : null;
+}
+
+function moduleCost(resolvedModule: string): number {
+  switch (resolvedModule) {
+    case "speech_to_text":
+      return 2;
+    case "eastern_image":
+      return 25;
+    case "eastern_upload":
+      return 8;
+    case "eastern_overview":
+    case "eastern_career":
+    case "eastern_finance":
+    case "eastern_marriage":
+    case "eastern_health":
+    case "eastern_fortune":
+    case "eastern_saved_chart":
+    case "eastern":
+      return 5;
+    default:
+      return 1;
+  }
+}
+
+function buildSseResponse(corsHeaders: Record<string, string>, text: string): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }
 
 async function callGeminiText(
@@ -1105,6 +1164,13 @@ serve(async (req: Request) => {
       throw new Error("GEMINI_API_KEY not configured");
     }
 
+    if (!supabaseAdmin) {
+      return new Response(JSON.stringify({ error: "Service configuration error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const {
       messages,
       context,
@@ -1119,7 +1185,58 @@ serve(async (req: Request) => {
       responseFormat = "text",
     } = (await req.json()) as RequestBody;
 
+    const token = getBearerToken(req);
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const authedUser = authData?.user ?? null;
+    if (authError || !authedUser) {
+      console.error("Auth error:", authError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (module === "speech_to_text") {
+      const resolvedModule = "speech_to_text";
+      const cost = moduleCost(resolvedModule);
+
+      const { data: walletRow, error: walletErr } = await supabaseAdmin
+        .from("wallets")
+        .select("balance_credits")
+        .eq("user_id", authedUser.id)
+        .maybeSingle();
+      if (walletErr) console.error("Wallet load error:", walletErr);
+
+      const balance = Number(walletRow?.balance_credits ?? 0);
+      if (!Number.isFinite(balance) || balance < cost) {
+        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: spendErr } = await supabaseAdmin.rpc("spend_credits", {
+        p_user_id: authedUser.id,
+        p_cost: cost,
+        p_reason: resolvedModule,
+        p_ref_type: "oracle_chat",
+        p_ref_id: null,
+      });
+      if (spendErr) {
+        console.error("Spend credits error:", spendErr);
+        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (!audio?.data || !audio?.mimeType) {
         return new Response(JSON.stringify({ error: "Missing audio" }), {
           status: 400,
@@ -1149,6 +1266,51 @@ serve(async (req: Request) => {
     }
 
     const resolvedModule = resolveModuleKey(normalizedModule, contextJson);
+
+    const cost = moduleCost(resolvedModule);
+    const { data: walletRow, error: walletErr } = await supabaseAdmin
+      .from("wallets")
+      .select("balance_credits")
+      .eq("user_id", authedUser.id)
+      .maybeSingle();
+    if (walletErr) console.error("Wallet load error:", walletErr);
+    const balance = Number(walletRow?.balance_credits ?? 0);
+
+    if (!Number.isFinite(balance) || balance < cost) {
+      if (resolvedModule === "eastern_image") {
+        return new Response(JSON.stringify({ error: "PAYWALL_IMAGE", required: cost, balance }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (stream) {
+        const msg = lang === "vi"
+          ? "Bạn đã dùng hết credit. Nạp tiền để xem phân tích chi tiết và tiếp tục sử dụng."
+          : "You are out of credits. Top up to get detailed answers and continue.";
+        return buildSseResponse(corsHeaders, msg);
+      }
+
+      return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { error: spendErr } = await supabaseAdmin.rpc("spend_credits", {
+      p_user_id: authedUser.id,
+      p_cost: cost,
+      p_reason: resolvedModule,
+      p_ref_type: "oracle_chat",
+      p_ref_id: null,
+    });
+    if (spendErr) {
+      console.error("Spend credits error:", spendErr);
+      return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (resolvedModule === "eastern_image") {
       const ctxObj =

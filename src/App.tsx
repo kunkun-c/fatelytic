@@ -30,6 +30,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const EasternAstrology = lazy(() => import("./pages/EasternAstrology"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const ModulePage = lazy(() => import("./pages/ModulePage"));
+const Topup = lazy(() => import("./pages/Topup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function RouteFallback() {
@@ -126,6 +127,7 @@ const App = () => (
                   <Route path="/auth/callback" element={<SuspendedRoute><AuthCallback /></SuspendedRoute>} />
                   <Route path="/history" element={<SuspendedRoute><ProtectedRoute><History /></ProtectedRoute></SuspendedRoute>} />
                   <Route path="/profile" element={<SuspendedRoute><ProtectedRoute><Profile /></ProtectedRoute></SuspendedRoute>} />
+                  <Route path="/topup" element={<SuspendedRoute><ProtectedRoute><Topup /></ProtectedRoute></SuspendedRoute>} />
                   <Route path="/disclaimer" element={<SuspendedRoute><Disclaimer /></SuspendedRoute>} />
                   <Route path="/terms" element={<SuspendedRoute><Terms /></SuspendedRoute>} />
                   <Route path="/privacy" element={<SuspendedRoute><Privacy /></SuspendedRoute>} />

@@ -395,10 +395,13 @@ const ChatPanel = ({
 
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token ?? null;
         const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
           body: JSON.stringify({
             messages: newMessages,
@@ -411,6 +414,10 @@ const ChatPanel = ({
         });
 
         if (!response.ok) {
+          if (response.status === 402) {
+            toast.error(lang === "vi" ? "Bạn đã hết credit. Vui lòng nạp tiền để tiếp tục." : "You are out of credits. Please top up to continue.");
+            throw new Error("Insufficient credits");
+          }
           throw new Error("Failed to get response");
         }
 

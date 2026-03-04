@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SectionItem {
   title: string;
@@ -67,9 +68,14 @@ const UploadChart = () => {
     try {
       const base64 = preview.split(",")[1];
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token ?? null;
       const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           messages: [
             {
@@ -89,7 +95,13 @@ const UploadChart = () => {
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to analyze");
+      if (!response.ok) {
+        if (response.status === 402) {
+          toast.error(lang === "vi" ? "Bạn đã hết credit. Vui lòng nạp tiền để tiếp tục." : "You are out of credits. Please top up to continue.");
+          return;
+        }
+        throw new Error("Failed to analyze");
+      }
       const data = await response.json();
       const parsed = JSON.parse(data.response) as EasternResult;
       setResult(parsed);

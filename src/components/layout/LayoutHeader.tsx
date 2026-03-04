@@ -9,6 +9,7 @@ import { MorphingText } from "@/components/animate-ui/primitives/texts/morphing"
 import { useI18n } from "@/lib/i18n";
 import { APP_INITIAL, APP_NAME } from "@/lib/brand";
 import { useAuth } from "@/lib/auth";
+import { useWalletBalance } from "@/hooks/use-wallet-balance";
 
 export default function LayoutHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,6 +17,7 @@ export default function LayoutHeader() {
   const location = useLocation();
   const { t, lang, setLang } = useI18n();
   const { user, signOut } = useAuth();
+  const { balance } = useWalletBalance();
 
   const avatarSrc =
     (user?.user_metadata?.avatar_url as string | undefined) ??
@@ -136,6 +138,12 @@ export default function LayoutHeader() {
 
           {user ? (
             <div className="relative">
+              <Link
+                to="/topup"
+                className="mr-1 inline-flex items-center rounded-full bg-secondary/60 px-3 py-2 text-sm font-semibold text-foreground ring-1 ring-border/60 hover:bg-secondary"
+              >
+                Credit: {balance}
+              </Link>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 rounded-full px-2 py-1.5 transition-colors hover:bg-secondary"
@@ -266,6 +274,11 @@ export default function LayoutHeader() {
 
               {user ? (
                 <>
+                  <Link to="/topup" onClick={() => setMobileOpen(false)}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start">
+                      Credit: {balance}
+                    </Button>
+                  </Link>
                   <div className="flex items-center gap-3 rounded-lg bg-secondary px-3 py-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage

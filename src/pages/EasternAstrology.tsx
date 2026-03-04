@@ -341,6 +341,8 @@ const EasternAstrology = () => {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token ?? null;
       const payload: Record<string, unknown> = {
         messages: [{ role: "user", content: "Generate a symbolic partner portrait." }],
         module: "eastern_image",
@@ -357,12 +359,21 @@ const EasternAstrology = () => {
 
       const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         signal: controller.signal,
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error("Failed to generate image");
+      if (!response.ok) {
+        if (response.status === 402) {
+          toast.error(lang === "vi" ? "Bạn đã hết credit. Vui lòng nạp tiền để tiếp tục." : "You are out of credits. Please top up to continue.");
+          return;
+        }
+        throw new Error("Failed to generate image");
+      }
       const data = (await response.json()) as {
         images?: Array<{ mimeType: string; data: string }>;
         imagenPrompt?: string;
