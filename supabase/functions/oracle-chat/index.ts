@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { BASE_PROMPTS, MODULE_PROMPTS } from "./prompts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getModuleCost } from "../_shared/credits.ts";
 
 type ModuleKey = Extract<keyof typeof MODULE_PROMPTS, string>;
 
@@ -16,7 +17,14 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      },
+    })
   : null;
 
 if (!GEMINI_API_KEY) {
@@ -35,25 +43,7 @@ function getBearerToken(req: Request): string | null {
 }
 
 function moduleCost(resolvedModule: string): number {
-  switch (resolvedModule) {
-    case "speech_to_text":
-      return 2;
-    case "eastern_image":
-      return 25;
-    case "eastern_upload":
-      return 8;
-    case "eastern_overview":
-    case "eastern_career":
-    case "eastern_finance":
-    case "eastern_marriage":
-    case "eastern_health":
-    case "eastern_fortune":
-    case "eastern_saved_chart":
-    case "eastern":
-      return 5;
-    default:
-      return 1;
-  }
+  return getModuleCost(resolvedModule);
 }
 
 function buildSseResponse(corsHeaders: Record<string, string>, text: string): Response {
@@ -1207,32 +1197,60 @@ serve(async (req: Request) => {
       const resolvedModule = "speech_to_text";
       const cost = moduleCost(resolvedModule);
 
-      const { data: walletRow, error: walletErr } = await supabaseAdmin
-        .from("wallets")
-        .select("balance_credits")
-        .eq("user_id", authedUser.id)
-        .maybeSingle();
-      if (walletErr) console.error("Wallet load error:", walletErr);
+      // Use the same RPC function as frontend for consistent balance checking
+      const { data: balanceData, error: balanceErr } = await supabaseAdmin.rpc("get_wallet_balance_for_user", {
+        p_user_id: authedUser.id
+      });
+      
+      if (balanceErr) {
+        console.error("Speech-to-text balance RPC error:", balanceErr);
+      }
 
-      const balance = Number(walletRow?.balance_credits ?? 0);
-      if (!Number.isFinite(balance) || balance < cost) {
-        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+      const balanceRaw = balanceData ?? 0;
+      const balance = Number(balanceRaw);
+      const costInt = Math.max(0, Math.trunc(Number(cost)));
+      
+      console.log(`Speech-to-text credit check for user ${authedUser.id}: balance=${balance}, cost=${costInt}, balanceData=${balanceRaw}`);
+      
+      if (!Number.isFinite(balance) || balance < costInt) {
+        console.log(`Speech-to-text insufficient credits: balance=${balance} < cost=${costInt}`);
+        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: costInt, balance }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const { error: spendErr } = await supabaseAdmin.rpc("spend_credits", {
+      const supabaseUser = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+        auth: { persistSession: false },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      });
+
+      const { error: spendErr } = await supabaseUser.rpc("spend_credits", {
         p_user_id: authedUser.id,
-        p_cost: cost,
+        p_cost: costInt,
         p_reason: resolvedModule,
         p_ref_type: "oracle_chat",
         p_ref_id: null,
       });
       if (spendErr) {
+        const msg = typeof (spendErr as { message?: unknown } | null)?.message === "string"
+          ? (spendErr as { message: string }).message
+          : String(spendErr);
         console.error("Spend credits error:", spendErr);
-        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
-          status: 402,
+
+        if (msg.includes("insufficient_credits")) {
+          return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: costInt, balance }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        return new Response(JSON.stringify({ error: "SPEND_CREDITS_FAILED", required: costInt, balance }), {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -1268,17 +1286,26 @@ serve(async (req: Request) => {
     const resolvedModule = resolveModuleKey(normalizedModule, contextJson);
 
     const cost = moduleCost(resolvedModule);
-    const { data: walletRow, error: walletErr } = await supabaseAdmin
-      .from("wallets")
-      .select("balance_credits")
-      .eq("user_id", authedUser.id)
-      .maybeSingle();
-    if (walletErr) console.error("Wallet load error:", walletErr);
-    const balance = Number(walletRow?.balance_credits ?? 0);
-
-    if (!Number.isFinite(balance) || balance < cost) {
+    
+    // Use the same RPC function as frontend for consistent balance checking
+    const { data: balanceData, error: balanceErr } = await supabaseAdmin.rpc("get_wallet_balance_for_user", {
+      p_user_id: authedUser.id
+    });
+    
+    if (balanceErr) {
+      console.error("Balance RPC error:", balanceErr);
+    }
+    
+    const balanceRaw = balanceData ?? 0;
+    const balance = Number(balanceRaw);
+    const costInt = Math.max(0, Math.trunc(Number(cost)));
+    
+    console.log(`Credit check for user ${authedUser.id}: balance=${balance}, cost=${costInt}, module=${resolvedModule}, balanceData=${balanceRaw}`);
+    
+    if (!Number.isFinite(balance) || balance < costInt) {
+      console.log(`Insufficient credits: balance=${balance} < cost=${costInt}`);
       if (resolvedModule === "eastern_image") {
-        return new Response(JSON.stringify({ error: "PAYWALL_IMAGE", required: cost, balance }), {
+        return new Response(JSON.stringify({ error: "PAYWALL_IMAGE", required: costInt, balance }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -1291,23 +1318,43 @@ serve(async (req: Request) => {
         return buildSseResponse(corsHeaders, msg);
       }
 
-      return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
+      return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: costInt, balance }), {
         status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { error: spendErr } = await supabaseAdmin.rpc("spend_credits", {
+    const supabaseUser = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: { persistSession: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    });
+
+    const { error: spendErr } = await supabaseUser.rpc("spend_credits", {
       p_user_id: authedUser.id,
-      p_cost: cost,
+      p_cost: costInt,
       p_reason: resolvedModule,
       p_ref_type: "oracle_chat",
       p_ref_id: null,
     });
     if (spendErr) {
+      const msg = typeof (spendErr as { message?: unknown } | null)?.message === "string"
+        ? (spendErr as { message: string }).message
+        : String(spendErr);
       console.error("Spend credits error:", spendErr);
-      return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: cost, balance }), {
-        status: 402,
+
+      if (msg.includes("insufficient_credits")) {
+        return new Response(JSON.stringify({ error: "INSUFFICIENT_CREDITS", required: costInt, balance }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ error: "SPEND_CREDITS_FAILED", required: costInt, balance }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -474,10 +474,9 @@ export default function ZiWeiChartSection({ profile, onBack, onAnalyze }: Props)
             variant="outline"
             size="sm"
             onClick={onBack}
-            className="gap-2"
+            className="p-2"
           >
             <ArrowLeft className="h-4 w-4" animate animateOnHover={false} animation="default"  />
-            Quay lại
           </Button>
         </Reveal>
         <div className="flex items-center gap-2">
@@ -497,10 +496,9 @@ export default function ZiWeiChartSection({ profile, onBack, onAnalyze }: Props)
               size="sm"
               onClick={() => void handleDownload()}
               disabled={isDownloading}
-              className="gap-2"
+              className="p-2"
             >
               <Download className="h-4 w-4" animate={isDownloading ? false : undefined} animateOnHover={false} animation="default" loop />
-              {isDownloading ? "Đang tải..." : "Tải ảnh"}
             </Button>
           </Reveal>
         </div>
@@ -601,7 +599,7 @@ export default function ZiWeiChartSection({ profile, onBack, onAnalyze }: Props)
       <Reveal from="up" offset={18} delay={0.12}>
         <div className="overflow-x-auto rounded-xl border border-border bg-white p-2">
           <div ref={chartRef} className="flex justify-center">
-            <div style={{ width: 1024, minWidth: 1024, height: "auto" }}>
+            <div className="w-80 md:w-full md:max-w-6xl h-auto">
               <Suspense fallback={<div className="w-full aspect-[4/3] bg-muted" />}>
                 <LazyIztrolabe
                   birthday={profile.dateOfBirth}

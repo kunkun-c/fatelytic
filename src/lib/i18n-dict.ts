@@ -575,6 +575,51 @@ export const translations = {
   "vi": "Tải lên lá số",
   "en": "Upload chart"
 },
+
+  // Topup
+  "topup.title": { vi: "Nạp Credit", en: "Top up" },
+  "topup.subtitle": {
+    vi: "Chọn gói phù hợp. Quét QR bằng app ngân hàng để chuyển khoản đúng nội dung. Credit sẽ tự cộng khi thanh toán thành công.",
+    en: "Choose a package. Scan the QR with your banking app and include the correct description. Credits will be added automatically after payment.",
+  },
+  "topup.modal.title": { vi: "Quét mã QR để thanh toán", en: "Scan QR to pay" },
+  "topup.modal.transferHint": {
+    vi: "Chuyển {amount} với mã: {code}",
+    en: "Transfer {amount} with code: {code}",
+  },
+  "topup.modal.qrAlt": { vi: "Mã QR thanh toán", en: "Payment QR code" },
+  "topup.modal.downloadQr": { vi: "Tải ảnh QR", en: "Download QR" },
+  "topup.modal.autoCredit": { vi: "Số credit sẽ được cộng tự động", en: "Credits will be added automatically" },
+  "topup.modal.checking": { vi: "Đang chờ thanh toán...", en: "Waiting for payment..." },
+  "topup.modal.checkingBtn": { vi: "Đang kiểm tra...", en: "Checking..." },
+  "topup.modal.close": { vi: "Đóng", en: "Close" },
+  "topup.package.createQr": { vi: "Tạo QR thanh toán", en: "Create payment QR" },
+  "topup.package.estimate": { vi: "Ước tính dựa trên giá credit theo tính năng.", en: "Estimates are based on feature credit costs." },
+  "topup.history.title": { vi: "Lịch sử nạp tiền", en: "Top-up History" },
+  "topup.history.view": { vi: "Xem lịch sử", en: "View History" },
+  "topup.history.hide": { vi: "Ẩn lịch sử", en: "Hide History" },
+  "topup.history.empty": { vi: "Chưa có lịch sử nạp tiền.", en: "No top-up history yet." },
+  "topup.history.viewQr": { vi: "Xem QR", en: "View QR" },
+  "topup.status.paid": { vi: "Đã thanh toán", en: "Paid" },
+  "topup.status.pending": { vi: "Chờ thanh toán", en: "Pending" },
+  "topup.status.expired": { vi: "Hết hạn", en: "Expired" },
+  "topup.status.canceled": { vi: "Đã hủy", en: "Canceled" },
+  "topup.toast.success": { vi: "Nạp credit thành công!", en: "Top up successful!" },
+  "topup.toast.expired": { vi: "Đơn hàng hết hạn.", en: "Order expired." },
+  "topup.toast.canceled": { vi: "Đơn hàng đã bị hủy.", en: "Order canceled." },
+  "topup.toast.historyFailed": { vi: "Không tải được lịch sử đơn hàng.", en: "Failed to load order history." },
+  "topup.toast.downloadFailed": { vi: "Không tải được QR.", en: "Failed to download QR." },
+  "topup.toast.sessionExpired": { vi: "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", en: "Session expired. Please sign in again." },
+  "topup.toast.signInRequired": { vi: "Vui lòng đăng nhập.", en: "Please sign in." },
+  "topup.toast.createFailed": { vi: "Không tạo được QR nạp tiền.", en: "Failed to create top up QR." },
+  // Insufficient Credits Alert
+  "insufficientCredits.title": { vi: "Không đủ credit", en: "Insufficient Credits" },
+  "insufficientCredits.description": {
+    vi: "Bạn cần {required} credit để thực hiện phân tích, nhưng chỉ có {balance} credit. Hãy nạp thêm để tiếp tục.",
+    en: "You need {required} credits for this analysis, but only have {balance} credits. Top up to continue."
+  },
+  "insufficientCredits.topupButton": { vi: "Nạp credit", en: "Top Up Credits" },
+  "insufficientCredits.cancelButton": { vi: "Huỷ", en: "Cancel" },
 "history.eastern.option.upload.desc": {
   "vi": "Tải ảnh lá số để được luận giải chi tiết hơn.",
   "en": "Upload your chart image for deeper interpretation."
@@ -800,7 +845,7 @@ export const translations = {
   "eastern.uploadDesc": { vi: "Phân tích sâu dựa trên hình ảnh lá số.", en: "Deep analysis based on the chart image." },
   "eastern.back": { vi: "Quay lại", en: "Back" },
   "eastern.history": { vi: "Lịch sử", en: "History" },
-  "eastern.upload.chooseChart": { vi: "Chọn ảnh lá số tử vi", en: "Choose your chart image" },
+  "eastern.upload.chooseChart": { vi: "Tải Lá Số", en: "Upload Chart" },
   "eastern.upload.formats": { vi: "Hỗ trợ PNG, JPEG", en: "Supports PNG, JPEG" },
   "eastern.upload.start": { vi: "Bắt đầu luận giải", en: "Start analysis" },
   "eastern.upload.note": { vi: "Ảnh sẽ được phân tích và luận giải chi tiết.", en: "The image will be analyzed and explained in detail." },
@@ -809,14 +854,14 @@ export const translations = {
   "en": "Analysis may take 1–3 minutes depending on image quality and system load. Please wait."
 },
 
-  "eastern.option.upload.label": { vi: "Luận giải lá số tử vi", en: "Interpret Tu Vi chart" },
+  "eastern.option.upload.label": { vi: "Tải Lá Số", en: "Upload Chart" },
 "eastern.option.upload.desc": {
   "vi": "Khám phá bản thân qua lá số Tử Vi.",
   "en": "Explore yourself through your Tu Vi chart."
 },
   "eastern.option.upload.prompt": { vi: "Luận giải chi tiết lá số tử vi từ ảnh", en: "Analyze this Tu Vi chart in detail based on the image" },
 
-  "eastern.option.savedChart.label": { vi: "Dùng lá số đã lưu", en: "Use saved chart" },
+  "eastern.option.savedChart.label": { vi: "Lá Số", en: "Saved Chart" },
   "eastern.option.overview.label": { vi: "Tổng quan", en: "Overview" },
 "eastern.option.overview.desc": {
   "vi": "Bức tranh tổng thể về tính cách và cuộc sống",

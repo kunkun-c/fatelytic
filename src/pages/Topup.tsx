@@ -4,14 +4,9 @@ import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { TOPUP_PACKAGES, type TopupPackageOption } from "../../supabase/functions/_shared/credits";
 
-type PackageOption = {
-  amountVnd: number;
-  credits: number;
-  titleVi: string;
-  taglineVi: string;
-  benefitsVi: string[];
-};
+type PackageOption = TopupPackageOption;
 
 type OrderRow = {
   id: string;
@@ -22,6 +17,22 @@ type OrderRow = {
   qr_url: string | null;
   created_at: string;
 };
+
+const ACTIVE_ORDER_STORAGE_KEY = "fatelytic:topup:active-order";
+
+type PersistedActiveOrder = {
+  userId: string;
+  order: OrderRow;
+};
+
+function safeParseJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
 
 // Reducer for managing topup state
 type TopupState = {
@@ -40,8 +51,7 @@ type TopupAction =
   | { type: 'SET_PENDING_PKG'; payload: PackageOption | null }
   | { type: 'SET_POLLING'; payload: boolean }
   | { type: 'SET_DOWNLOADING'; payload: boolean }
-  | { type: 'RESET_STATE' }
-  | { type: 'CLEAR_ORDER_STATE' };
+  | { type: 'RESET_STATE' };
 
 const topupReducer = (state: TopupState, action: TopupAction): TopupState => {
   switch (action.type) {
@@ -66,22 +76,13 @@ const topupReducer = (state: TopupState, action: TopupAction): TopupState => {
         polling: false,
         downloading: false,
       };
-    case 'CLEAR_ORDER_STATE':
-      return {
-        ...state,
-        activeOrder: null,
-        pendingPkg: null,
-        creating: false,
-        creatingAmountVnd: null,
-        polling: false,
-      };
     default:
       return state;
   }
 };
 
 export default function Topup() {
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const { session } = useAuth();
   
   const [state, dispatch] = useReducer(topupReducer, {
@@ -99,7 +100,20 @@ export default function Topup() {
 
   const pollIntervalRef = useRef<number | null>(null);
   const pollInFlightRef = useRef(false);
-  const mountTimeRef = useRef(Date.now());
+
+  const persistActiveOrder = useCallback(
+    (order: OrderRow | null) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+      if (!order) {
+        window.localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
+        return;
+      }
+      const payload: PersistedActiveOrder = { userId, order };
+      window.localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(payload));
+    },
+    [session?.user?.id]
+  );
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -110,114 +124,25 @@ export default function Topup() {
     pollInFlightRef.current = false; // Reset in-flight flag
   }, []);
 
-  // Enhanced stop polling with force flag
-  const forceStopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      window.clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    dispatch({ type: 'SET_POLLING', payload: false });
-    pollInFlightRef.current = false;
+  // Manual close function for popup
+  const closePopup = useCallback(() => {
+    stopPolling();
     dispatch({ type: 'SET_ACTIVE_ORDER', payload: null });
-  }, []);
-  
-  // Clear any active order on unmount to prevent polling on reload
-  // Also clear stuck orders on mount to prevent freezing
-  useEffect(() => {
-    // Clear any stuck orders that might be causing the page to freeze
-    dispatch({ type: 'CLEAR_ORDER_STATE' });
-    
-    // Clear any existing polling interval immediately
-    if (pollIntervalRef.current) {
-      window.clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    
-    // Reset in-flight flag
-    pollInFlightRef.current = false;
-    
-    // Add page visibility change listener to stop polling when tab is hidden
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        forceStopPolling();
-      }
-    };
-    
-    // Add beforeunload listener to clean up on page reload/navigation
-    const handleBeforeUnload = () => {
-      forceStopPolling();
-    };
-    
-    // Add pagehide listener as backup for mobile browsers
-    const handlePageHide = () => {
-      forceStopPolling();
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide);
-    
-    return () => {
-      if (pollIntervalRef.current) {
-        window.clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-      pollInFlightRef.current = false;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handlePageHide);
-    };
-  }, [forceStopPolling]);
+    persistActiveOrder(null);
+  }, [persistActiveOrder, stopPolling]);
 
-  const packages = useMemo<PackageOption[]>(
-    () => [
-      {
-        amountVnd: 29000,
-        credits: 50,
-        titleVi: "Gói Khởi Đầu",
-        taglineVi: "Dùng thử nghiêm túc, hỏi nhanh gọn",
-        benefitsVi: [
-          "~50 lượt chat",
-          "hoặc ~6 lần xem lá số (upload)",
-          "hoặc ~2 lần tạo ảnh + vài lượt chat",
-        ],
-      },
-      {
-        amountVnd: 59000,
-        credits: 120,
-        titleVi: "Gói Tiêu Chuẩn",
-        taglineVi: "Dùng thường xuyên cho luận giải",
-        benefitsVi: [
-          "~120 lượt chat",
-          "hoặc ~15 lần xem lá số (upload)",
-          "hoặc ~4 lần tạo ảnh + chat",
-        ],
-      },
-      {
-        amountVnd: 99000,
-        credits: 220,
-        titleVi: "Gói Nâng Cao",
-        taglineVi: "Cân bằng giữa chat và chuyên sâu",
-        benefitsVi: [
-          "~220 lượt chat",
-          "hoặc ~27 lần xem lá số (upload)",
-          "hoặc ~8 lần tạo ảnh + chat",
-        ],
-      },
-      {
-        amountVnd: 199000,
-        credits: 500,
-        titleVi: "Gói Chuyên Sâu",
-        taglineVi: "Tối ưu cho tạo ảnh và dùng dài hạn",
-        benefitsVi: [
-          "~500 lượt chat",
-          "hoặc ~62 lần xem lá số (upload)",
-          "hoặc ~20 lần tạo ảnh + chat",
-        ],
-      },
-    ],
-    []
-  );
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const persisted = safeParseJson<PersistedActiveOrder>(window.localStorage.getItem(ACTIVE_ORDER_STORAGE_KEY));
+    if (!persisted) return;
+    if (persisted.userId !== userId) return;
+
+    dispatch({ type: 'SET_ACTIVE_ORDER', payload: persisted.order });
+  }, [session?.user?.id]);
+
+  const packages = useMemo<PackageOption[]>(() => TOPUP_PACKAGES, []);
 
   const formatVnd = (v: number) => new Intl.NumberFormat("vi-VN").format(v) + "đ";
 
@@ -245,7 +170,7 @@ export default function Topup() {
       dispatch({ type: 'SET_POLLING', payload: true });
       
       let retryCount = 0;
-      const maxRetries = 150; // 150 * 4 seconds = 10 minutes max
+      const maxRetries = 90; // 90 * 4 seconds = 6 minutes max
       
       pollIntervalRef.current = window.setInterval(async () => {
         if (pollInFlightRef.current) return;
@@ -255,25 +180,49 @@ export default function Topup() {
         if (retryCount > maxRetries) {
           console.log('Max polling retries reached, stopping');
           stopPolling();
-          toast.error(lang === "vi" ? "Đơn hàng hết hạn." : "Order expired.");
+          toast.error(t("topup.toast.expired"));
           dispatch({ type: 'SET_ACTIVE_ORDER', payload: null });
+          persistActiveOrder(null);
           return;
         }
         
         try {
           const next = await fetchOrder(orderId);
           if (!next) return;
-          dispatch({ type: 'SET_ACTIVE_ORDER', payload: next });
-          if (next.status === "paid") {
-            if (pollIntervalRef.current) window.clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            dispatch({ type: 'SET_POLLING', payload: false });
-            toast.success(lang === "vi" ? "Nạp credit thành công." : "Top up successful.");
-          } else if (next.status === "expired" || next.status === "canceled") {
-            if (pollIntervalRef.current) window.clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-            dispatch({ type: 'SET_POLLING', payload: false });
-            toast.error(lang === "vi" ? "Đơn hàng đã hết hạn hoặc bị hủy." : "Order expired or canceled.");
+          
+          // Only update state if status changed to reduce UI updates
+          if (next.status !== state.activeOrder?.status) {
+            dispatch({ type: 'SET_ACTIVE_ORDER', payload: next });
+            
+            if (next.status === "paid") {
+              if (pollIntervalRef.current) window.clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
+              dispatch({ type: 'SET_POLLING', payload: false });
+              
+              toast.success(t("topup.toast.success"));
+              
+              // Optimistically update local cached balance immediately.
+              const delta = Number(next.credits ?? 0);
+              if (Number.isFinite(delta) && delta > 0) {
+                window.dispatchEvent(new CustomEvent("credit-spent", { detail: { delta } }));
+              }
+              
+              // Trigger wallet balance refresh across the app
+              window.dispatchEvent(new CustomEvent('wallet-refresh-needed'));
+              
+              // Auto-close popup after successful payment
+              setTimeout(() => {
+                dispatch({ type: 'SET_ACTIVE_ORDER', payload: null });
+                persistActiveOrder(null);
+              }, 2000);
+              
+            } else if (next.status === "expired" || next.status === "canceled") {
+              if (pollIntervalRef.current) window.clearInterval(pollIntervalRef.current);
+              pollIntervalRef.current = null;
+              dispatch({ type: 'SET_POLLING', payload: false });
+              toast.error(next.status === "expired" ? t("topup.toast.expired") : t("topup.toast.canceled"));
+              persistActiveOrder(next);
+            }
           }
         } catch (err) {
           console.error('Polling error:', err);
@@ -287,7 +236,7 @@ export default function Topup() {
         pollIntervalRef.current = null;
       };
     },
-    [fetchOrder, lang, stopPolling]
+    [fetchOrder, persistActiveOrder, stopPolling, state.activeOrder?.status, t]
   );
 
   const loadOrderHistory = useCallback(async () => {
@@ -314,7 +263,7 @@ export default function Topup() {
         
       if (error) {
         console.error('Error loading order history:', error);
-        toast.error(lang === "vi" ? "Không tải được lịch sử đơn hàng." : "Failed to load order history.");
+        toast.error(t("topup.toast.historyFailed"));
         return;
       }
       
@@ -324,7 +273,7 @@ export default function Topup() {
     } finally {
       setLoadingHistory(false);
     }
-  }, [session?.user, lang]);
+  }, [session?.user, t]);
 
   const downloadQr = useCallback(async () => {
     const url = state.activeOrder?.qr_url;
@@ -345,11 +294,11 @@ export default function Topup() {
       URL.revokeObjectURL(objectUrl);
     } catch (e) {
       console.error(e);
-      toast.error(lang === "vi" ? "Không tải được QR." : "Failed to download QR.");
+      toast.error(t("topup.toast.downloadFailed"));
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false });
     }
-  }, [state.activeOrder?.order_code, state.activeOrder?.qr_url, lang]);
+  }, [state.activeOrder?.order_code, state.activeOrder?.qr_url, t]);
 
   const createOrder = useCallback(
     async (pkg: PackageOption) => {
@@ -375,7 +324,7 @@ export default function Topup() {
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError) {
             console.error("Session refresh error:", refreshError);
-            toast.error(lang === "vi" ? "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại." : "Session expired. Please sign in again.");
+            toast.error(t("topup.toast.sessionExpired"));
             setTimeout(() => {
               window.location.href = "/auth";
             }, 2000);
@@ -391,7 +340,7 @@ export default function Topup() {
         }
 
         if (!s) {
-          toast.error(lang === "vi" ? "Vui lòng đăng nhập." : "Please sign in.");
+          toast.error(t("topup.toast.signInRequired"));
           setTimeout(() => {
             window.location.href = "/auth";
           }, 2000);
@@ -400,7 +349,7 @@ export default function Topup() {
 
         const accessToken = s.access_token;
         if (!accessToken) {
-          toast.error(lang === "vi" ? "Vui lòng đăng nhập." : "Please sign in.");
+          toast.error(t("topup.toast.signInRequired"));
           setTimeout(() => {
             window.location.href = "/auth";
           }, 2000);
@@ -423,24 +372,25 @@ export default function Topup() {
         if (!json?.order) throw new Error("Invalid response");
 
         dispatch({ type: 'SET_ACTIVE_ORDER', payload: json.order });
+        persistActiveOrder(json.order);
       } catch (err) {
         console.error("Create order error:", err);
-        toast.error(lang === "vi" ? "Không tạo được QR nạp tiền." : "Failed to create top up QR.");
+        toast.error(t("topup.toast.createFailed"));
         dispatch({ type: 'SET_ACTIVE_ORDER', payload: null });
+        persistActiveOrder(null);
       } finally {
         dispatch({ type: 'SET_CREATING', payload: false });
         dispatch({ type: 'SET_CREATING_AMOUNT', payload: null });
         dispatch({ type: 'SET_PENDING_PKG', payload: null });
       }
     },
-    [lang, session]
+    [persistActiveOrder, session, t]
   );
 
   // Remove auto-check for existing orders - user should choose package first
 
-  // Start polling only when a new order is created and pending; do NOT poll on page load
+  // Start polling when there's a pending order (includes restored order)
   useEffect(() => {
-    // Defensive checks to prevent polling on page reload or with invalid orders
     if (!state.activeOrder?.id) return;
     if (state.activeOrder.id === "__creating__") return;
     if (state.activeOrder.status !== "pending") return;
@@ -449,68 +399,28 @@ export default function Topup() {
     if (pollIntervalRef.current) return;
     if (state.polling) return; // Already polling
     
-    // Additional safety check: don't start polling if we just mounted
-    const mountTime = mountTimeRef.current;
-    const orderCreatedAt = new Date(state.activeOrder.created_at).getTime();
-    const timeSinceMount = mountTime - orderCreatedAt;
-    
-    // If order was created more than 30 seconds ago, don't start polling on page load
-    if (timeSinceMount > 30000) {
-      console.log('Order too old, not starting polling on page load');
-      return;
-    }
-    
-    // Check if this is likely a page reload scenario
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    if (navigationEntry && navigationEntry.type === 'reload') {
-      console.log('Page reload detected, not starting polling');
-      return;
-    }
-    
     const stop = startPolling(state.activeOrder.id);
     return stop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.activeOrder?.id, state.activeOrder?.status, state.activeOrder?.created_at]); // startPolling excluded to prevent infinite loops
 
-  // Close modal and show success when payment is complete
-  useEffect(() => {
-    if (state.activeOrder?.status === "paid") {
-      toast.success(lang === "vi" ? "Nạp credit thành công!" : "Top up successful!");
-
-      // Optimistically update local cached balance immediately.
-      const delta = Number(state.activeOrder.credits ?? 0);
-      if (Number.isFinite(delta) && delta > 0) {
-        window.dispatchEvent(new CustomEvent("credit-spent", { detail: { delta } }));
-      }
-
-      forceStopPolling();
-      
-      // Trigger wallet balance refresh across the app
-      window.dispatchEvent(new CustomEvent('wallet-refresh-needed'));
-    }
-  }, [state.activeOrder?.credits, state.activeOrder?.status, lang, forceStopPolling]);
-
   return (
     <div className="mx-auto w-full max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">{lang === "vi" ? "Nạp Credit" : "Top up"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {lang === "vi"
-            ? "Chọn gói phù hợp. Quét QR bằng app ngân hàng để chuyển khoản đúng nội dung. Credit sẽ tự cộng khi thanh toán thành công."
-            : "Choose a package. Scan the QR with your banking app and include the correct description. Credits will be added automatically after payment."}
-        </p>
+        <h1 className="text-2xl font-bold text-foreground">{t("topup.title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("topup.subtitle")}</p>
       </div>
 
       {state.activeOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-lg bg-card p-6 shadow-lg">
             <div className="mb-4 text-center">
-              <h2 className="text-lg font-semibold">{lang === "vi" ? "Quét mã QR để thanh toán" : "Scan QR to pay"}</h2>
+              <h2 className="text-lg font-semibold">{t("topup.modal.title")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {lang === "vi" 
-                  ? `Chuyển ${formatVnd(state.activeOrder.amount_vnd)} với mã: ${state.activeOrder.order_code}`
-                  : `Transfer ${formatVnd(state.activeOrder.amount_vnd)} with code: ${state.activeOrder.order_code}`
-                }
+                {t("topup.modal.transferHint", {
+                  amount: formatVnd(state.activeOrder.amount_vnd),
+                  code: state.activeOrder.order_code,
+                })}
               </p>
             </div>
             
@@ -520,17 +430,13 @@ export default function Topup() {
                 {state.activeOrder?.qr_url ? (
                   <img
                     src={state.activeOrder.qr_url}
-                    alt="Payment QR Code"
+                    alt={t("topup.modal.qrAlt")}
                     className="h-64 w-64 rounded-lg border shadow-sm"
                   />
                 ) : (
                   <div className="h-64 w-64 rounded-lg border bg-muted/40 shadow-sm">
                     <div className="flex h-full w-full flex-col items-center justify-center gap-3">
                       <span className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-foreground/40 border-t-transparent" />
-                      <div className="space-y-2">
-                        <div className="h-3 w-40 animate-pulse rounded bg-muted" />
-                        <div className="h-3 w-28 animate-pulse rounded bg-muted" />
-                      </div>
                     </div>
                   </div>
                 )}
@@ -543,30 +449,28 @@ export default function Topup() {
                   {state.downloading ? (
                     <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   ) : null}
-                  {lang === "vi" ? "Tải ảnh QR" : "Download QR"}
+                  {t("topup.modal.downloadQr")}
                 </button>
               </div>
             </div>
             
             <div className="space-y-2 text-center text-sm text-muted-foreground">
-              <p>{lang === "vi" ? "Số credit sẽ được cộng tự động" : "Credits will be added automatically"}</p>
+              <p>{t("topup.modal.autoCredit")}</p>
               {state.activeOrder.status === "pending" && state.polling && (
                 <p className="text-xs">
-                  {lang === "vi" ? "Đang chờ thanh toán..." : "Waiting for payment..."}
+                  {t("topup.modal.checking")}
                 </p>
               )}
             </div>
             
             <button
-              onClick={() => {
-                forceStopPolling();
-              }}
+              onClick={closePopup}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-border bg px-3 py-2 text-sm hover:bg-accent"
             >
               {state.polling && state.activeOrder.status === "pending" ? (
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
               ) : null}
-              {state.polling && state.activeOrder.status === "pending" ? (lang === "vi" ? "Đang kiểm tra..." : "Checking...") : (lang === "vi" ? "Đóng" : "Close")}
+              {state.polling && state.activeOrder.status === "pending" ? t("topup.modal.checkingBtn") : t("topup.modal.close")}
             </button>
           </div>
         </div>
@@ -591,7 +495,7 @@ export default function Topup() {
                 <div key={b}>- {b}</div>
               ))}
               <div className="pt-2 text-xs text-muted-foreground/80">
-                {lang === "vi" ? "Ước tính dựa trên giá credit theo tính năng." : "Estimates are based on feature credit costs."}
+                {t("topup.package.estimate")}
               </div>
             </div>
 
@@ -600,7 +504,7 @@ export default function Topup() {
                 {state.creating && state.creatingAmountVnd === p.amountVnd ? (
                   <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 ) : null}
-                {lang === "vi" ? "Tạo QR thanh toán" : "Create payment QR"}
+                {t("topup.package.createQr")}
               </Button>
             </div>
           </div>
@@ -611,7 +515,7 @@ export default function Topup() {
       <div className="mt-8">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">
-            {lang === "vi" ? "Lịch sử nạp tiền" : "Top-up History"}
+            {t("topup.history.title")}
           </h2>
           <Button
             variant="outline"
@@ -629,7 +533,7 @@ export default function Topup() {
             {loadingHistory ? (
               <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : null}
-            {showHistory ? (lang === "vi" ? "Ẩn lịch sử" : "Hide History") : (lang === "vi" ? "Xem lịch sử" : "View History")}
+            {showHistory ? t("topup.history.hide") : t("topup.history.view")}
           </Button>
         </div>
 
@@ -637,7 +541,7 @@ export default function Topup() {
           <div className="mt-4 space-y-2">
             {historyOrders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                {lang === "vi" ? "Chưa có lịch sử nạp tiền." : "No top-up history yet."}
+                {t("topup.history.empty")}
               </div>
             ) : (
               historyOrders.map((order) => (
@@ -657,10 +561,10 @@ export default function Topup() {
                         order.status === "pending" ? "text-yellow-600" : 
                         order.status === "expired" ? "text-red-600" : "text-gray-600"
                       }`}>
-                        {order.status === "paid" ? (lang === "vi" ? "Đã thanh toán" : "Paid") :
-                         order.status === "pending" ? (lang === "vi" ? "Chờ thanh toán" : "Pending") :
-                         order.status === "expired" ? (lang === "vi" ? "Hết hạn" : "Expired") :
-                         (lang === "vi" ? "Đã hủy" : "Canceled")}
+                        {order.status === "paid" ? t("topup.status.paid") :
+                         order.status === "pending" ? t("topup.status.pending") :
+                         order.status === "expired" ? t("topup.status.expired") :
+                         t("topup.status.canceled")}
                       </div>
                     </div>
                   </div>
@@ -669,9 +573,12 @@ export default function Topup() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => dispatch({ type: 'SET_ACTIVE_ORDER', payload: order })}
+                        onClick={() => {
+                          dispatch({ type: 'SET_ACTIVE_ORDER', payload: order });
+                          persistActiveOrder(order);
+                        }}
                       >
-                        {lang === "vi" ? "Xem QR" : "View QR"}
+                        {t("topup.history.viewQr")}
                       </Button>
                     </div>
                   )}

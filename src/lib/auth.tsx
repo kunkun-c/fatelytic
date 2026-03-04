@@ -20,14 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fast path: if we previously had a session, render immediately (optimistic).
-    // We'll verify the session asynchronously and correct state if invalid.
-    const hasSessionFlag = typeof window !== "undefined" && localStorage.getItem("supabase.auth.hasSession");
-    if (hasSessionFlag === "true") {
-      setLoading(false);
-    }
-
-    // Get initial session (async verification)
+    // Get initial session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSession(session);
@@ -38,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         localStorage.removeItem("supabase.auth.hasSession");
       }
-      // Ensure loading is false even if fast path already set it
       setLoading(false);
     });
 

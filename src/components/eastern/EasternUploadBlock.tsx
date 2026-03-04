@@ -2,6 +2,7 @@ import { Activity, FileImage, Sparkles, Upload, X } from "@/components/ui/icons"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
+import { Highlight, HighlightItem } from "@/components/animate-ui/primitives/effects/highlight";
 import { ImageZoom } from "@/components/animate-ui/primitives/effects/image-zoom";
 import EasternUploadResult from "@/components/eastern/EasternUploadResult";
 import React from "react";
@@ -74,30 +75,54 @@ export default function EasternUploadBlock({
     <>
       <Reveal from="up" offset={18} delay={0.05}>
         <Card className="p-5 shadow-sm">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-foreground">{t("eastern.option.upload.label")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("eastern.option.upload.desc")}</p>
+              <p className="mt-1 text-xs text-muted-foreground truncate">{t("eastern.option.upload.desc")}</p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={uploadSource === "image" ? "default" : "outline"}
-                onClick={() => setUploadSource("image")}
-                disabled={loading}
+            <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60 flex-shrink-0">
+              <Highlight
+                as="div"
+                mode="parent"
+                controlledItems
+                hover={false}
+                click={false}
+                value={uploadSource}
+                exitDelay={120}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                className="rounded-full bg-background shadow-md shadow-foreground/5"
+                containerClassName="flex items-center gap-1 rounded-full"
+                boundsOffset={{ top: 0, left: 0, width: 0, height: 0 }}
               >
-                {t("eastern.upload.chooseChart")}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={uploadSource === "saved" ? "default" : "outline"}
-                onClick={() => setUploadSource("saved")}
-                disabled={loading || !hasSavedChart}
-              >
-                {t("eastern.option.savedChart.label")}
-              </Button>
+                <HighlightItem value="image" asChild>
+                  <button
+                    type="button"
+                    onClick={() => setUploadSource("image")}
+                    disabled={loading}
+                    className={`relative rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 select-none ${
+                      uploadSource === "image" 
+                        ? "text-gradient-primary shadow-sm" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-105"}`}
+                  >
+                    {t("eastern.upload.chooseChart")}
+                  </button>
+                </HighlightItem>
+                <HighlightItem value="saved" asChild>
+                  <button
+                    type="button"
+                    onClick={() => setUploadSource("saved")}
+                    disabled={loading || !hasSavedChart}
+                    className={`relative rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 select-none ${
+                      uploadSource === "saved" 
+                        ? "text-gradient-primary shadow-sm" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    } ${(loading || !hasSavedChart) ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-105"}`}
+                  >
+                    {t("eastern.option.savedChart.label")}
+                  </button>
+                </HighlightItem>
+              </Highlight>
             </div>
           </div>
 

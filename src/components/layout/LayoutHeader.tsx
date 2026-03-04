@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { Menu, X, User, ChevronDown, LogOut, Globe } from "@/components/ui/icons";
+import { Menu, X, User, ChevronDown, LogOut, Globe, Sparkles } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button as AnimatedButton } from "@/components/animate-ui/components/buttons/button";
@@ -100,43 +100,32 @@ export default function LayoutHeader() {
           ))}
         </Highlight>
 
-        <div className="hidden items-center gap-2 md:flex">
-          {/* <div className="flex items-center gap-1 rounded-full bg-secondary/60 p-1 ring-1 ring-border/60">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-background/70 text-muted-foreground">
-              <Globe className="h-4 w-4" />
-            </div>
-            <Highlight
-              as="div"
-              mode="parent"
-              controlledItems
-              hover={false}
-              click={false}
-              value={langActive}
-              exitDelay={120}
-              transition={{ type: "spring", stiffness: 420, damping: 34 }}
-              className="rounded-full bg-background/80 shadow-sm shadow-foreground/5"
-              containerClassName="flex items-center gap-1 rounded-full"
-              boundsOffset={{ top: 0, left: 0, width: 0, height: 0 }}
-            >
-              {langItems.map((item) => (
-                <HighlightItem key={item.value} value={item.value} asChild>
-                  <button
-                    type="button"
-                    onClick={() => setLang(item.value)}
-                    onMouseEnter={() => setLangActive(item.value)}
-                    onMouseLeave={() => setLangActive(lang)}
-                    aria-label={t(item.value === "vi" ? "lang.vi" : "lang.en")}
-                    className={`relative rounded-full px-3 py-2 text-sm font-semibold transition-colors select-none ${
-                      lang === item.value ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                </HighlightItem>
-              ))}
-            </Highlight>
-          </div> */}
+        <div className="flex items-center gap-2 md:hidden">
+          {user && (
+            <Link to="/topup" className="inline-flex">
+              <AnimatedButton
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="rounded-full px-2.5 gap-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border-purple-500/30 shadow-lg shadow-purple-500/20 transition-all duration-300 hover:scale-105"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-purple-500 animate-pulse" animateOnHover="default" />
+                <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent text-sm">{balance}</span>
+              </AnimatedButton>
+            </Link>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="h-9 w-9 rounded-full p-0 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 transition-all duration-300"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+        </div>
 
+        <div className="hidden items-center gap-2 md:flex">
           {user ? (
             <div className="relative flex items-center gap-2">
               <Link to="/topup" className="inline-flex">
@@ -144,10 +133,10 @@ export default function LayoutHeader() {
                   type="button"
                   variant="secondary"
                   size="sm"
-                  className="rounded-full px-3"
+                  className="rounded-full px-3 gap-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border-purple-500/30 shadow-lg shadow-purple-500/20 transition-all duration-300 hover:scale-105"
                 >
-                  <span className="text-muted-foreground">Credit</span>
-                  <span className="font-semibold text-foreground">{balance}</span>
+                  <Sparkles className="h-3.5 w-3.5 text-purple-500 animate-pulse" animateOnHover="default" />
+                  <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{balance}</span>
                 </AnimatedButton>
               </Link>
 
@@ -216,12 +205,6 @@ export default function LayoutHeader() {
             </Link>
           )}
         </div>
-
-        <div className="flex items-center gap-2 md:hidden">
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="rounded-full p-2 hover:bg-secondary">
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
       </div>
 
       {mobileOpen && (
@@ -285,8 +268,9 @@ export default function LayoutHeader() {
               {user ? (
                 <>
                   <Link to="/topup" onClick={() => setMobileOpen(false)}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
-                      Credit: {balance}
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-pink-500/10 transition-all duration-300">
+                      <Sparkles className="h-4 w-4 text-purple-500 animate-pulse" />
+                      <span className="font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{balance}</span>
                     </Button>
                   </Link>
                   <div className="flex items-center gap-3 rounded-lg bg-secondary px-3 py-2">

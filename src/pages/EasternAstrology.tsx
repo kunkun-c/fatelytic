@@ -2,12 +2,14 @@ import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Upload, Sparkles, Briefcase, Heart, Wallet, Activity, ImagePlus, Clock } from "@/components/ui/icons";
 import ReactMarkdown from "react-markdown";
 import { useI18n } from "@/lib/i18n";
+import { useNavigate } from "react-router-dom";
 import EasternImageResult from "@/components/eastern/EasternImageResult";
 import { Reveal } from "@/components/animate-ui/primitives/effects/reveal";
 import EasternTopBar from "@/components/eastern/EasternTopBar";
 import EasternUploadBlock from "@/components/eastern/EasternUploadBlock";
 import EasternImageBlock from "@/components/eastern/EasternImageBlock";
 import EasternProfileReadingBlock from "@/components/eastern/EasternProfileReadingBlock";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { getStoredProfile } from "@/lib/profile";
 import { useLayoutConfig } from "@/components/layout/use-layout-config";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,6 +108,7 @@ const EasternAstrology = () => {
 
   useLayoutConfig(layoutConfig);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const profile = getStoredProfile();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -136,6 +139,10 @@ const EasternAstrology = () => {
 
   const [selectedDaiVanIndex, setSelectedDaiVanIndex] = useState(0);
   const [selectedTieuVanIndex, setSelectedTieuVanIndex] = useState(0);
+
+  // Insufficient credits alert state
+  const [showInsufficientCreditsAlert, setShowInsufficientCreditsAlert] = useState(false);
+  const [insufficientCreditsInfo, setInsufficientCreditsInfo] = useState<{ required: number; balance: number } | null>(null);
 
   const [qaOpen, setQaOpen] = useState(false);
   const [qaSessionKey, setQaSessionKey] = useState<string | null>(null);
@@ -369,7 +376,10 @@ const EasternAstrology = () => {
 
       if (!response.ok) {
         if (response.status === 402) {
-          toast.error(lang === "vi" ? "Bạn đã hết credit. Vui lòng nạp tiền để tiếp tục." : "You are out of credits. Please top up to continue.");
+          const errorData = await response.json().catch(() => ({}));
+          const { required, balance } = errorData as { required?: number; balance?: number };
+          setInsufficientCreditsInfo({ required: required || 0, balance: balance || 0 });
+          setShowInsufficientCreditsAlert(true);
           return;
         }
         throw new Error("Failed to generate image");
@@ -546,10 +556,7 @@ const EasternAstrology = () => {
       const isUpload = resolvedOptionId === "upload";
       const isUploadSaved = isUpload && uploadSource === "saved";
 
-      if (isUpload && uploadSource === "image" && !uploadFile) {
-        toast.error(t("eastern.toast.missingUpload"));
-        return;
-      }
+      // Don't validate upload file here - let handleAnalyze do it when user explicitly clicks Analyze
 
       if (isUploadSaved) {
         const ziweiChartJson = (profile as unknown as { ziweiChartJson?: unknown })?.ziweiChartJson;
@@ -605,14 +612,28 @@ const EasternAstrology = () => {
           };
         }
 
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token ?? null;
         const response = await fetch(`${supabaseUrl}/functions/v1/oracle-chat`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
           signal: controller.signal,
           body: JSON.stringify(payload),
         });
 
-        if (!response.ok) throw new Error("Failed to get response");
+        if (!response.ok) {
+          if (response.status === 402) {
+            const errorData = await response.json().catch(() => ({}));
+            const { required, balance } = errorData as { required?: number; balance?: number };
+            setInsufficientCreditsInfo({ required: required || 0, balance: balance || 0 });
+            setShowInsufficientCreditsAlert(true);
+            return;
+          }
+          throw new Error("Failed to get response");
+        }
 
         if (!shouldStream) {
           const data = await response.json() as { response?: unknown; creditsSpent?: number };
@@ -837,6 +858,40 @@ const EasternAstrology = () => {
   );
 
   const handleAnalyze = useCallback(() => {
+    // If we're currently viewing a ziwei chart, allow analysis without upload validation
+    if (showZiWeiChart) {
+      // Hide chart with smooth transition
+      setShowZiWeiChart(false);
+      
+      // Set up for analysis after transition
+      setTimeout(() => {
+        setSelectedOption("upload");
+        setUploadSource("saved");
+        setResult(null);
+        setStreamingText("");
+        setQaOpen(false);
+        setQaSessionKey(null);
+        setLastReadingId(null);
+        
+        // Trigger analysis
+        void runAnalyze("upload");
+      }, 300); // Wait for transition to complete
+      return;
+    }
+
+    // Only allow analysis if there's a file (image) or saved chart
+    if (uploadSource === "image" && !uploadFile) {
+      toast.error(t("eastern.toast.missingUpload"));
+      return;
+    }
+    if (uploadSource === "saved") {
+      const ziweiChartJson = (profile as unknown as { ziweiChartJson?: unknown })?.ziweiChartJson;
+      if (!ziweiChartJson) {
+        toast.error(t("eastern.toast.missingSavedChart"));
+        return;
+      }
+    }
+
     // Hide chart with smooth transition
     setShowZiWeiChart(false);
     
@@ -853,7 +908,7 @@ const EasternAstrology = () => {
       // Trigger analysis
       void runAnalyze("upload");
     }, 300); // Wait for transition to complete
-  }, [runAnalyze]);
+  }, [runAnalyze, uploadSource, uploadFile, profile, t, showZiWeiChart]);
 
   return (
     <>
@@ -884,8 +939,8 @@ const EasternAstrology = () => {
                 <Clock className="h-5 w-5 text-primary" animate={hoveredOptionId === "ziwei"} animateOnHover={false} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">Lá số tử vi</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Xem nhanh biểu đồ 12 cung tử vi theo hồ sơ của bạn</p>
+                <p className="text-sm font-semibold text-foreground">Lá Số Tử Vi</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Lá Số Tử Vi Theo Ngày Tháng Năm Sinh</p>
               </div>
             </button>
           </Reveal>
@@ -1015,6 +1070,30 @@ const EasternAstrology = () => {
           </>
         )}
       </div>
+
+      {/* Insufficient Credits Alert Dialog */}
+      <AlertDialog open={showInsufficientCreditsAlert} onOpenChange={setShowInsufficientCreditsAlert}>
+        <AlertDialogContent className="max-w-[95%] sm:max-w-lg rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("insufficientCredits.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {insufficientCreditsInfo && 
+                t("insufficientCredits.description")
+                  .replace("{required}", String(insufficientCreditsInfo.required))
+                  .replace("{balance}", String(insufficientCreditsInfo.balance))
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row sm:justify-end gap-2">
+            <AlertDialogCancel className="w-1/2 sm:w-auto mb-0 mt-0">{t("insufficientCredits.cancelButton")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              navigate("/topup");
+            }} className="w-1/2 sm:w-auto mt-0">
+              {t("insufficientCredits.topupButton")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

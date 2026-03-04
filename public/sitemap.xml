@@ -2,78 +2,78 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>http://localhost:5173/</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/overview</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/calculator</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/numerology</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/result</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/chat</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/dashboard</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/login</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/auth/callback</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/history</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/profile</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/disclaimer</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/terms</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/privacy</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/eastern-astrology</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/western-astrology</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/tarot</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/iching</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
   <url>
     <loc>http://localhost:5173/career-ai</loc>
-    <lastmod>2026-03-04T04:05:22.041Z</lastmod>
+    <lastmod>2026-03-04T14:09:53.988Z</lastmod>
   </url>
 </urlset>

@@ -304,6 +304,10 @@ serve(async (req: Request) => {
       }
     } else {
       console.log(`Successfully granted ${order.credits} credits to user ${order.user_id}`);
+      
+      // Trigger wallet refresh event for UI updates
+      // We can't directly dispatch events to the client from the edge function,
+      // but the successful response will trigger the client-side polling to detect the change
     }
 
     await supabaseAdmin
