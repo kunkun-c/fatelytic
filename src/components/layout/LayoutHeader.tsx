@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Menu, X, User, ChevronDown, LogOut, Globe } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button as AnimatedButton } from "@/components/animate-ui/components/buttons/button";
 import { Highlight, HighlightItem } from "@/components/animate-ui/primitives/effects/highlight";
 import { GradientText } from "@/components/animate-ui/primitives/texts/gradient";
 import { MorphingText } from "@/components/animate-ui/primitives/texts/morphing";
@@ -137,16 +138,25 @@ export default function LayoutHeader() {
           </div> */}
 
           {user ? (
-            <div className="relative">
-              <Link
-                to="/topup"
-                className="mr-1 inline-flex items-center rounded-full bg-secondary/60 px-3 py-2 text-sm font-semibold text-foreground ring-1 ring-border/60 hover:bg-secondary"
-              >
-                Credit: {balance}
+            <div className="relative flex items-center gap-2">
+              <Link to="/topup" className="inline-flex">
+                <AnimatedButton
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-3"
+                >
+                  <span className="text-muted-foreground">Credit</span>
+                  <span className="font-semibold text-foreground">{balance}</span>
+                </AnimatedButton>
               </Link>
-              <button
+
+              <AnimatedButton
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 rounded-full px-2 py-1.5 transition-colors hover:bg-secondary"
+                className="h-9 rounded-full px-2"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage
@@ -164,7 +174,7 @@ export default function LayoutHeader() {
                   </AvatarFallback>
                 </Avatar>
                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
+              </AnimatedButton>
               {userMenuOpen && (
                 <div
                   className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-border bg-card/95 p-1 shadow-xl"

@@ -10,6 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import type { Json } from "@/integrations/supabase/types";
 
+// Module cost mapping (must match backend)
+const moduleCost: Record<string, number> = {
+  speech_to_text: 2,
+  numerology: 1,
+  eastern: 2,
+  eastern_image: 10,
+  eastern_upload: 5,
+};
+
 export interface ChatPanelMessage {
   role: "user" | "assistant";
   content: string;
@@ -421,6 +430,13 @@ const ChatPanel = ({
           throw new Error("Failed to get response");
         }
 
+        // For streaming responses, credits are spent upfront
+        // Get the cost from module and dispatch event
+        const cost = moduleCost[moduleKey] || 0;
+        if (cost > 0) {
+          window.dispatchEvent(new CustomEvent('credit-spent', { detail: { delta: -cost } }));
+        }
+
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No response body");
 
@@ -512,8 +528,14 @@ const ChatPanel = ({
       });
 
       if (!response.ok) throw new Error("STT failed");
-      const data = (await response.json()) as { text?: unknown };
+      const data = (await response.json()) as { text?: unknown; creditsSpent?: number };
       const text = typeof data.text === "string" ? data.text.trim() : "";
+      
+      // Update local balance if credits were spent
+      if (typeof data.creditsSpent === "number" && data.creditsSpent > 0) {
+        window.dispatchEvent(new CustomEvent('credit-spent', { detail: { delta: -data.creditsSpent } }));
+      }
+      
       if (!text) {
         toast.error(t("chat.error"));
         return;

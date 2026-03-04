@@ -1255,7 +1255,7 @@ serve(async (req: Request) => {
       ];
 
       const text = (await callGeminiText(GEMINI_API_KEY, systemPrompt, parts)).trim();
-      return new Response(JSON.stringify({ text }), {
+      return new Response(JSON.stringify({ text, creditsSpent: cost }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -1628,6 +1628,7 @@ JSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: strin
           spousePortraitDirection,
           partnerSketch: (sketchObj && typeof sketchObj === "object" ? (sketchObj.partnerSketch as unknown) : null) ?? null,
           imageAnalysis,
+          creditsSpent: cost,
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1751,6 +1752,7 @@ JSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: strin
               lang === "vi"
                 ? "Nội dung này chỉ dành cho mục đích tự hiểu bản thân và phản chiếu."
                 : "This content is for self-understanding and reflection purposes only.",
+            creditsSpent: cost,
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1768,6 +1770,7 @@ JSON schema: { partnerSketch: { genderPresentation: string|null, ageRange: strin
           lang === "vi"
             ? "Nội dung này chỉ dành cho mục đích tự hiểu bản thân và phản chiếu."
             : "This content is for self-understanding and reflection purposes only.",
+        creditsSpent: cost,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

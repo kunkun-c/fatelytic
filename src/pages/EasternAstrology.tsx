@@ -382,7 +382,13 @@ const EasternAstrology = () => {
         compatibilityRationale?: string | null;
         spousePortraitDirection?: string | null;
         response?: unknown;
+        creditsSpent?: number;
       };
+      
+      // Update local balance if credits were spent
+      if (typeof data.creditsSpent === "number" && data.creditsSpent > 0) {
+        window.dispatchEvent(new CustomEvent('credit-spent', { detail: { delta: -data.creditsSpent } }));
+      }
 
       const unwrapResponsePayload = (value: unknown) => {
         if (!value) return null;
@@ -609,7 +615,13 @@ const EasternAstrology = () => {
         if (!response.ok) throw new Error("Failed to get response");
 
         if (!shouldStream) {
-          const data = await response.json();
+          const data = await response.json() as { response?: unknown; creditsSpent?: number };
+          
+          // Update local balance if credits were spent
+          if (typeof data.creditsSpent === "number" && data.creditsSpent > 0) {
+            window.dispatchEvent(new CustomEvent('credit-spent', { detail: { delta: -data.creditsSpent } }));
+          }
+          
           let parsed: EasternResult;
           try {
             parsed = parseEasternResult(String((data as { response?: unknown })?.response ?? ""));

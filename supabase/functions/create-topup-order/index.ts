@@ -16,7 +16,14 @@ if (!SEPAY_QR_ACC || !SEPAY_QR_BANK) {
 }
 
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      },
+    })
   : null;
 
 function getBearerToken(req: Request): string | null {
@@ -27,10 +34,13 @@ function getBearerToken(req: Request): string | null {
 
 function generateOrderCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "FTL-";
-  const bytes = crypto.getRandomValues(new Uint8Array(10));
-  for (const b of bytes) out += alphabet[b % alphabet.length];
-  return out;
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let rand = "";
+  for (const b of bytes) rand += alphabet[b % alphabet.length];
+
+  // Time component reduces collision risk even further.
+  const time = Date.now().toString(36).toUpperCase();
+  return `FLT${time}${rand}`;
 }
 
 type RequestBody = {
@@ -42,7 +52,7 @@ serve(async (req: Request) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
   };
 
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });

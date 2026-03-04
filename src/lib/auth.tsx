@@ -20,10 +20,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
+    // Fast path: if we previously had a session, render immediately (optimistic).
+    // We'll verify the session asynchronously and correct state if invalid.
+    const hasSessionFlag = typeof window !== "undefined" && localStorage.getItem("supabase.auth.hasSession");
+    if (hasSessionFlag === "true") {
+      setLoading(false);
+    }
+
+    // Get initial session (async verification)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (session) {
+        setSession(session);
+        setUser(session.user ?? null);
+        localStorage.setItem("supabase.auth.hasSession", "true");
+      } else {
+        setSession(null);
+        setUser(null);
+        localStorage.removeItem("supabase.auth.hasSession");
+      }
+      // Ensure loading is false even if fast path already set it
       setLoading(false);
     });
 
@@ -31,13 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state change event:", event);
       setSession(session);
       setUser(session?.user ?? null);
+      if (session) {
+        localStorage.setItem("supabase.auth.hasSession", "true");
+      } else {
+        localStorage.removeItem("supabase.auth.hasSession");
+      }
       
       // If token is refreshed, update the session
       if (event === 'TOKEN_REFRESHED' && session) {
-        console.log("Token refreshed successfully");
         setSession(session);
         setUser(session?.user ?? null);
       }
@@ -62,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) throw error;
+    // Optimistic flag for fast reloads
+    localStorage.setItem("supabase.auth.hasSession", "true");
   };
 
   const signUpWithPassword = async (email: string, password: string, fullName?: string) => {
@@ -94,6 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Clear optimistic flag on logout
+    localStorage.removeItem("supabase.auth.hasSession");
   };
 
   return (

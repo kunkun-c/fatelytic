@@ -7,12 +7,35 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY") ?? Deno.env.g
 // Optional: set a shared secret to validate incoming webhook calls.
 const SEPAY_WEBHOOK_SECRET = Deno.env.get("SEPAY_WEBHOOK_SECRET");
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const raw = atob(parts[1]);
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("SUPABASE_URL or SERVICE_ROLE_KEY environment variable is not set");
 }
 
+if (SUPABASE_SERVICE_ROLE_KEY) {
+  const payload = decodeJwtPayload(SUPABASE_SERVICE_ROLE_KEY);
+  const role = payload && typeof payload.role === "string" ? payload.role : null;
+}
+
 const supabaseAdmin = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+      global: {
+        headers: {
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      },
+    })
   : null;
 
 function safeString(v: unknown): string | null {
@@ -56,8 +79,14 @@ serve(async (req: Request) => {
     }
 
     if (SEPAY_WEBHOOK_SECRET) {
-      const got = safeString(req.headers.get("X-Sepay-Secret"));
+      const authHeader = req.headers.get("Authorization") ?? "";
+      // Support both "Apikey SECRET" and "Bearer SECRET" formats
+      const apiKeyMatch = authHeader.match(/^\s*Apikey\s+(.+)\s*$/i);
+      const bearerMatch = authHeader.match(/^\s*Bearer\s+(.+)\s*$/i);
+      const got = apiKeyMatch ? apiKeyMatch[1] : bearerMatch ? bearerMatch[1] : null;
+      
       if (!got || got !== SEPAY_WEBHOOK_SECRET) {
+        console.error("Webhook auth failed. Header:", authHeader);
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -84,7 +113,9 @@ serve(async (req: Request) => {
     const description = safeString(obj.description) ?? safeString(obj.body) ?? "";
 
     // We match topup by order_code embedded in description/content.
-    const orderCodeMatch = (content + "\n" + description).match(/FTL-[A-Z0-9]{6,20}/);
+    // New format: DH + base36 timestamp + random base32 segment
+    // Example: DHMABCD123EFGH567
+    const orderCodeMatch = (content + "\n" + description).match(/FLT[A-Z0-9]{6,32}/);
     const orderCode = orderCodeMatch ? orderCodeMatch[0] : null;
 
     const eventId = referenceCode ?? (orderCode
@@ -98,18 +129,20 @@ serve(async (req: Request) => {
       .maybeSingle();
 
     // Duplicate event_id => already processed.
+    let dedup = false;
     if (insertEventErr) {
       const msg = String((insertEventErr as { message?: unknown })?.message ?? "");
       if (msg.toLowerCase().includes("duplicate")) {
-        return new Response(JSON.stringify({ ok: true, dedup: true }), {
+        // Important: don't early-return. We still want to process the order in case
+        // previous attempts failed before updating/granting credits.
+        dedup = true;
+      } else {
+        console.error("Failed to insert webhook event:", insertEventErr);
+        return new Response(JSON.stringify({ error: "Failed to log webhook" }), {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.error("Failed to insert webhook event:", insertEventErr);
-      return new Response(JSON.stringify({ error: "Failed to log webhook" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
     if (!orderCode) {
@@ -118,7 +151,7 @@ serve(async (req: Request) => {
         .update({ processed: true, processed_at: new Date().toISOString(), error: "order_code_not_found" })
         .eq("event_id", eventId);
 
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(JSON.stringify({ ok: true, dedup }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -135,7 +168,7 @@ serve(async (req: Request) => {
         .update({ processed: true, processed_at: new Date().toISOString(), error: "order_not_found" })
         .eq("event_id", eventId);
 
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(JSON.stringify({ ok: true, dedup }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -146,7 +179,7 @@ serve(async (req: Request) => {
         .update({ processed: true, processed_at: new Date().toISOString() })
         .eq("event_id", eventId);
 
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(JSON.stringify({ ok: true, dedup }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -165,25 +198,112 @@ serve(async (req: Request) => {
       });
     }
 
+    const creditsToGrant = Number(order.credits ?? 0);
     const { error: grantErr } = await supabaseAdmin.rpc("grant_credits", {
       p_user_id: order.user_id,
-      p_credits: Number(order.credits ?? 0),
+      p_credits: creditsToGrant,
       p_reason: "topup_sepay",
       p_ref_type: "topup_orders",
       p_ref_id: String(order.id),
     });
 
     if (grantErr) {
-      console.error("Failed to grant credits:", grantErr);
-      await supabaseAdmin
-        .from("sepay_webhook_events")
-        .update({ processed: true, processed_at: new Date().toISOString(), error: "grant_failed" })
-        .eq("event_id", eventId);
+      const msg = String((grantErr as { message?: unknown })?.message ?? "");
+      console.error("Failed to grant credits (rpc):", grantErr);
 
-      return new Response(JSON.stringify({ error: "Failed to grant credits" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Fallback: some projects use non-JWT service keys, which won't set request.jwt.claim.role.
+      // In that case, the RPC rejects. We can still grant credits safely using service role DB access.
+      if (msg.toLowerCase().includes("service_role")) {
+        // Idempotency: if we already inserted a ledger row for this order, don't grant again.
+        const { data: existingLedger } = await supabaseAdmin
+          .from("credit_ledger")
+          .select("id")
+          .eq("ref_type", "topup_orders")
+          .eq("ref_id", String(order.id))
+          .eq("reason", "topup_sepay")
+          .maybeSingle();
+
+        if (!existingLedger) {
+          await supabaseAdmin
+            .from("wallets")
+            .upsert(
+              { user_id: order.user_id },
+              { onConflict: "user_id", ignoreDuplicates: true }
+            );
+
+          const { data: walletRow, error: walletReadErr } = await supabaseAdmin
+            .from("wallets")
+            .select("balance_credits")
+            .eq("user_id", order.user_id)
+            .maybeSingle();
+
+          if (walletReadErr) {
+            await supabaseAdmin
+              .from("sepay_webhook_events")
+              .update({ processed: true, processed_at: new Date().toISOString(), error: `wallet_read_failed: ${String((walletReadErr as { message?: unknown })?.message ?? "")}` })
+              .eq("event_id", eventId);
+
+            return new Response(JSON.stringify({ error: "Failed to grant credits", details: "wallet_read_failed" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const currentBalance = Number((walletRow as { balance_credits?: unknown } | null)?.balance_credits ?? 0);
+          const nextBalance = (Number.isFinite(currentBalance) ? currentBalance : 0) + creditsToGrant;
+
+          const { error: walletUpdateErr } = await supabaseAdmin
+            .from("wallets")
+            .update({ balance_credits: nextBalance, updated_at: new Date().toISOString() } as unknown)
+            .eq("user_id", order.user_id);
+
+          if (walletUpdateErr) {
+            await supabaseAdmin
+              .from("sepay_webhook_events")
+              .update({ processed: true, processed_at: new Date().toISOString(), error: `wallet_update_failed: ${String((walletUpdateErr as { message?: unknown })?.message ?? "")}` })
+              .eq("event_id", eventId);
+
+            return new Response(JSON.stringify({ error: "Failed to grant credits", details: "wallet_update_failed" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const { error: ledgerErr } = await supabaseAdmin
+            .from("credit_ledger")
+            .insert({
+              user_id: order.user_id,
+              delta_credits: creditsToGrant,
+              reason: "topup_sepay",
+              ref_type: "topup_orders",
+              ref_id: String(order.id),
+            });
+
+          if (ledgerErr) {
+            await supabaseAdmin
+              .from("sepay_webhook_events")
+              .update({ processed: true, processed_at: new Date().toISOString(), error: `ledger_insert_failed: ${String((ledgerErr as { message?: unknown })?.message ?? "")}` })
+              .eq("event_id", eventId);
+
+            return new Response(JSON.stringify({ error: "Failed to grant credits", details: "ledger_insert_failed" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      } else {
+        await supabaseAdmin
+          .from("sepay_webhook_events")
+          .update({ processed: true, processed_at: new Date().toISOString(), error: `grant_failed: ${msg}` })
+          .eq("event_id", eventId);
+
+        return new Response(JSON.stringify({ error: "Failed to grant credits", details: msg }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      console.log(`Successfully granted ${order.credits} credits to user ${order.user_id}`);
     }
 
     await supabaseAdmin
@@ -191,7 +311,7 @@ serve(async (req: Request) => {
       .update({ processed: true, processed_at: new Date().toISOString() })
       .eq("event_id", eventId);
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, dedup }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
