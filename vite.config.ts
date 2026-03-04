@@ -89,17 +89,7 @@ export default defineConfig(({ mode }) => {
       },
       // Ensure proper module resolution
       target: "esnext",
-      minify: "terser",
-      terserOptions: {
-        compress: {
-          // Preserve React context creation
-          pure_funcs: ["console.log"],
-        },
-        mangle: {
-          // Preserve React-related names
-          reserved: ["React", "createContext", "useContext"],
-        },
-      },
+      minify: "esbuild",
     },
     resolve: {
       alias: {
