@@ -100,6 +100,11 @@ export default defineConfig(({ mode }) => {
     define: {
       // Ensure React is available globally
       "process.env.NODE_ENV": JSON.stringify(mode === "development" ? "development" : "production"),
+      // Prevent UMD bundles from using window.React
+      "global.React": "undefined",
+      "window.React": "undefined",
+      // Environment variables for HTML substitution
+      "VITE_PUBLIC_SITE_URL": JSON.stringify(process.env.VITE_PUBLIC_SITE_URL || "http://localhost:5173/"),
     },
   };
 
