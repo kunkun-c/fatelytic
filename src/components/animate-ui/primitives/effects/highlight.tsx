@@ -234,6 +234,13 @@ function Highlight<T extends React.ElementType = 'div'>({
     else if (defaultValue !== undefined) setActiveValue(defaultValue);
   }, [value, defaultValue]);
 
+  // Debug: log when activeValue changes in controlled mode
+  React.useEffect(() => {
+    if (controlledItems && value !== undefined) {
+      console.log('Highlight controlled mode:', { value, activeValue, controlledItems });
+    }
+  }, [value, activeValue, controlledItems]);
+
   const id = React.useId();
 
   const contextValue = React.useMemo<HighlightContextType<string>>(

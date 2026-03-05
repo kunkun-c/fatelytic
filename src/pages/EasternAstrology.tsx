@@ -123,6 +123,11 @@ const EasternAstrology = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadSource, setUploadSource] = useState<"image" | "saved">("image");
 
+  // Debug: log uploadSource changes
+  useEffect(() => {
+    console.log('EasternAstrology uploadSource changed to:', uploadSource);
+  }, [uploadSource]);
+
   const partnerPortraitInputRef = useRef<HTMLInputElement>(null);
   const partnerChartInputRef = useRef<HTMLInputElement>(null);
 
