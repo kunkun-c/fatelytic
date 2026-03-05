@@ -97,7 +97,10 @@ export default function EasternUploadBlock({
                 <HighlightItem value="image" asChild>
                   <button
                     type="button"
-                    onClick={() => setUploadSource("image")}
+                    onClick={() => {
+                      console.log('Image button clicked, uploadSource:', uploadSource, 'loading:', loading);
+                      setUploadSource("image");
+                    }}
                     disabled={loading}
                     className={`relative rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 select-none ${
                       uploadSource === "image" 
@@ -111,7 +114,10 @@ export default function EasternUploadBlock({
                 <HighlightItem value="saved" asChild>
                   <button
                     type="button"
-                    onClick={() => setUploadSource("saved")}
+                    onClick={() => {
+                      console.log('Saved button clicked, uploadSource:', uploadSource, 'loading:', loading, 'hasSavedChart:', hasSavedChart);
+                      setUploadSource("saved");
+                    }}
                     disabled={loading || !hasSavedChart}
                     className={`relative rounded-full px-3 py-2 text-sm font-bold transition-all duration-300 select-none ${
                       uploadSource === "saved" 

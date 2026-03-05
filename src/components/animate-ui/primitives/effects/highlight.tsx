@@ -597,7 +597,8 @@ function HighlightItem<T extends React.ElementType>({
       );
     }
 
-    return React.cloneElement(element, {
+    // For mode="parent" with asChild, ensure handlers are properly applied
+    const clonedElement = React.cloneElement(element, {
       ref: refCallback,
       ...getNonOverridingDataAttributes(element, {
         ...dataAttributes,
@@ -605,6 +606,17 @@ function HighlightItem<T extends React.ElementType>({
       }),
       ...commonHandlers,
     });
+    
+    // Debug: log if handlers are being applied
+    if (process.env.NODE_ENV === 'development' && asChild && element.props.onClick) {
+      console.log('HighlightItem asChild applying onClick:', {
+        hasCommonHandlers: Object.keys(commonHandlers).length > 0,
+        childValue,
+        elementOnClick: !!element.props.onClick,
+      });
+    }
+    
+    return clonedElement;
   }
 
   return enabled ? (
