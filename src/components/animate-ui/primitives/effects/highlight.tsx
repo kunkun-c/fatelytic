@@ -14,7 +14,7 @@ type Bounds = {
   height: number;
 };
 
-const DEFAULT_BOUNDS_OFFSET: Bounds = {
+const DEFAULT_BOUNDS: Bounds = {
   top: 0,
   left: 0,
   width: 0,
@@ -142,7 +142,7 @@ function Highlight<T extends React.ElementType = 'div'>({
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   const propsBoundsOffset = (props as ParentModeHighlightProps)?.boundsOffset;
-  const boundsOffset = propsBoundsOffset ?? DEFAULT_BOUNDS_OFFSET;
+  const boundsOffset = propsBoundsOffset ?? DEFAULT_BOUNDS;
   const boundsOffsetTop = boundsOffset.top ?? 0;
   const boundsOffsetLeft = boundsOffset.left ?? 0;
   const boundsOffsetWidth = boundsOffset.width ?? 0;
@@ -530,7 +530,14 @@ function HighlightItem<T extends React.ElementType>({
             element.props.onClick?.(e);
           },
         }
-      : {};
+      : asChild && element.props.onClick
+        ? {
+            onClick: (e: React.MouseEvent<HTMLDivElement>) => {
+              setActiveValue(childValue);
+              element.props.onClick?.(e);
+            },
+          }
+        : {};
 
   if (asChild) {
     if (mode === 'children') {
